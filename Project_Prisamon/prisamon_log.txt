@@ -1,0 +1,56 @@
+--- PRISAMON STARTUP LOG ---
+
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\LOADING PAGE\LAODING 1.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\LOADING PAGE\LOADING 2.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\LOADING PAGE\LOADING 3.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\LOADING PAGE\LOADING 4.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\hERO_PAGE\Hero_page.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\character\proferrsor oak - Edited.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\CHATBOX\chatbox.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\PRISADEX\DETAIL\SQUIRTLE.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\PRISADEX\DETAIL\BULBASOUR.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\PRISADEX\DETAIL\CHARMEDER.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\Prisamon_profile\Squirtle.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\Prisamon_profile\Balbasour.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\Prisamon_profile\Charmender.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\POKEMON\Prisamon_profile\pikachu.png
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\Stage screen\map-1.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\Stage screen\map-2.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\Stage screen\map-3.bmp
+SUCCESS! File found.
+----------------------
+Checking for file: C:\game_project\Project_Prisamon\Project_Prisamon\img\Stage screen\map-4.bmp
+SUCCESS! File found.
+----------------------

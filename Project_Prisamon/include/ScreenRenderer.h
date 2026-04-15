@@ -1,0 +1,27 @@
+#pragma once
+#include "Globals.h"
+#include "PokemonManager.h"
+#include "BattleSystem.h"
+#include "WorldMap.h"
+#include "ResourceManager.h"
+#include <stdio.h>
+#include <string.h>
+
+void drawMainMenu();
+void drawLoadingScreen();
+void drawOakDialogue();
+void drawPrisamonSelection();
+void drawEndDialogue();
+void drawHeroPage();
+void drawMapScreen();
+void drawBattleScreen();
+void drawWinScreen();
+void drawGameOverScreen();
+void drawOpenWorld();
+void drawItemUI();
+void drawBagScreen();
+void drawCaptureScreen();
+void drawRewardScreen();
+void drawPrisadex();
+void drawPCBox();
+void drawFadeOverlay();

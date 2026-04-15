@@ -1,0 +1,3172 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include "iGraphics.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+#include <windows.h>
+
+// Global Variables for custom fixedUpdate snippet
+int x = 0;
+int y = 0;
+
+// Game States
+int gameState = 0;
+int previousGameState = 0;
+int battleReturnState = 0;
+int imagesLoaded = 0;
+
+// Mouse Hover & Click Tracking
+int hoverX = 0;
+int hoverY = 0;
+int lastClickX = -1;
+int lastClickY = -1;
+
+// Animation variables
+int currentFrame = 1;
+int totalLoadingTicks = 0;
+
+// Panning variables for the Hero Page
+int heroPageX = 0;
+int panSpeed = 50;
+
+int panPositions[10] = { 0, -114, -228, -341, -455, -569, -683, -796, -910, -1024 };
+
+int panIndex = 0;
+int panCooldown = 0;
+
+// ---> PROGRESSION <---
+int map1Completed = 0;
+int map2Completed = 0;
+int map3Completed = 0;
+int lockScreenTimer = 0;
+int isFirstTimeMapTour = 1;
+int mapTourTimer = 0;
+int heroPageVisited = 0;
+
+// New Node Progression Variables
+int nodesCleared = 0;
+int currentActiveNode = 0;
+
+// ---> NEW INVENTORY VARIABLES <---
+int bagSelection = 0;
+int bagMenuCooldown = 0;
+int coins = 0;
+int prisaballs = 5;
+int evolutionStones = 0;
+int xpCandies = 0;
+int potionCount = 3;
+
+// ---> BAG ITEM DESCRIPTIONS <---
+char itemDescLine1[6][100] = {
+	"A medicinal spray that restores 45 HP to your Prisamon,",
+	"The shimmering currency of this world, used to trade",
+	"A specialized capture device that refracts light to",
+	"A mysterious, radiant mineral that triggers a permanent",
+	"A concentrated burst of energy that instantly boosts",
+	""
+};
+
+char itemDescLine2[6][100] = {
+	"mending wounds sustained in the heat of battle.",
+	"with merchants for better gear and supplies.",
+	"tether and claim a wild Prisamon as your own.",
+	"transformation in certain species of Prisamon.",
+	"your Prisamon's experience points.",
+	""
+};
+
+// Map Node Coordinates (Centers)
+int nodeX[6] = { 223, 350, 590, 525, 592, 785 };
+int nodeY[6] = { 435, 730, 715, 545, 415, 605 };
+
+// FADE TRANSITION
+int isFading = 0;
+float fadeAlpha = 0.0f;
+int fadeDirection = 0;
+int nextGameState = -1;
+
+// DIALOGUE
+int showDialogue = 1;
+int currentDialogueIndex = 0;
+int totalDialogues = 5;
+int currentCharCount = 0;
+
+// IMAGE IDs
+int imgLoading1;
+int imgLoading2;
+int imgLoading3;
+int imgLoading4;
+int imgHeroPage;
+int imgOak;
+int imgChatbox;
+int imgMap1;
+int imgMap2;
+int imgMap3;
+int imgMap4;
+int prisamonPaths[3];
+int prisamonProfilePaths[3];
+int imgPikachuProfile;
+int imgOpenWorldBG;
+int imgVillage16;
+int imgBag;
+int imgItemUI;
+int imgGrindBattle;
+int imgPrisadex;
+int imgTraining;
+int imgPartyIndex;
+
+// ---> POKEMON PROFILE ARRAYS (CATEGORIZED) <---
+int imgFire[3];
+int imgWater[5];
+int imgGrass[3];
+int imgFlying[7];
+int imgElectric[3];
+int imgRock[4];
+int imgNormal[4];
+int imgSmall[10];
+
+int imgMap2Normal[3];
+int imgMap2Psychic[3];
+int imgCaveBattleground;
+
+// ---> BATTLE GROUND VARIABLES <---
+int imgGrassBattleground;
+int imgPrisamonBack[3];
+int imgPikachuBack;
+int imgCaterpieFront;
+int imgMyHPBox;
+int imgOppHPBox;
+int imgBattleDashboard;
+int imgPointer;
+
+// ---> MULTI-ENEMY SYSTEM VARIABLES <---
+int enemyImages[5];
+int currentEnemyIndex = 0;
+int totalEnemies = 1;
+char enemyBattleTypes[5][20];
+
+// ---> TYPE TRACKING VARIABLES <---
+int isEnemyGhost = 0;
+
+// ---> DYNAMIC PROJECTILE COLOR VARIABLES <---
+int projColorR = 255;
+int projColorG = 255;
+int projColorB = 255;
+int imgWildPoke[6];
+int imgWildPokeBack[6];
+int caughtWild[6] = { 0, 0, 0, 0, 0, 0 };
+
+// Dialogue arrays
+char dialogueArray[5][100] = {
+	"Ah, there you are! You have that specific 'glow' about you.",
+	"And no, I don't think it's just the sunlight hitting your jacket.",
+	"In this world, every soul refracts light differently.",
+	"We call that bond a Prisamon.",
+	"Tell me, are you ready to see which Prisamon you'll claim today?"
+};
+
+int currentPrisamonIndex = 0;
+int selectedPrisamon = -1;
+int activeButton = 0;
+
+int currentEndDialogueIndex = 0;
+int totalEndDialogues = 4;
+char endDialogueArray[4][100] = {
+	"A brilliant match! See how it shines?",
+	"That Prisamon's glow perfectly reflects your own spirit.",
+	"You two are going to light up the world together.",
+	"Now, get out and show them your true strength!"
+};
+
+int currentPikachuDialogueIndex = 0;
+int totalPikachuDialogues = 2;
+char pikachuDialogueArray[2][100] = {
+	"I have another Prisamon for you, it is Pikachu.",
+	"Take good care of it!"
+};
+
+int showOakMapDialogue = 1;
+int currentOakMapDialogueIndex = 0;
+int totalOakMapDialogues = 3;
+char oakMapDialogueArray[3][100] = {
+	"Here we are, the first region of your journey!",
+	"Now is the perfect time to test your new Prisamon's power.",
+	"Click on the first area (1-1) to begin your very first battle!"
+};
+
+int hasSeenWildIntro = 0;
+int showOakWildIntro = 0;
+int currentOakWildIntroIndex = 0;
+int totalOakWildIntros = 3;
+char oakWildIntroArray[3][100] = {
+	"Welcome to the wild! This is where Prisamon roam free.",
+	"Walk into the tall grass, and you might encounter one.",
+	"Weaken them first, then use your Prisaballs to catch them!"
+};
+
+int showOakBlockDialogue = 0;
+int currentOakBlockIndex = 0;
+int totalOakBlocks = 1;
+char oakBlockArray[1][100] = {
+	"Wait! You must complete Stage 1-3 before going there."
+};
+
+int hasSeenGrindIntro = 0;
+int showOakGrindIntro = 0;
+int currentOakGrindIntroIndex = 0;
+int totalOakGrindIntros = 2;
+char oakGrindIntroArray[2][100] = {
+	"Excellent catch! Your team is getting stronger.",
+	"Click the ITEM menu to grind materials for your Prisamon!"
+};
+
+// ---> GRINDING SYSTEM <---
+long long lastGrindTime = 0;
+int grindCooldown = 600;
+int canGrind = 1;
+
+// ---> DYSTOPIAN OPPONENTS <---
+int imgGastly;
+int imgHaunter;
+int imgGengar;
+int dystopianEnemyImages[3];
+int dystopianEnemyBackImages[3];
+int currentDystopianEnemyIndex = 0;
+int totalDystopianEnemies = 3;
+
+// ---> MUSIC SYSTEM <---
+char currentMusic[20] = "";
+
+// ================= PARTY SYSTEM VARIABLES =================
+int partyIDs[6] = { -1, -1, -1, -1, -1, -1 };
+int partyHP[6] = { 0 };
+int partyMaxHP[6] = { 0 };
+int partyLevel[6] = { 0 };
+int partyAttack[6] = { 0 };
+int partyEXP[6] = { 0 };
+int partySize = 0;
+int currentActivePokemon = 0;
+
+char activePokeNames[10][20] = {
+	"Bulbasaur",
+	"Charmander",
+	"Squirtle",
+	"Pikachu",
+	"Duskull",
+	"Rattata",
+	"Spearow",
+	"Magikarp",
+	"Pidgeotto",
+	"Scyther"
+};
+
+// Maps party ID (0-9) to prisadex index for correct type lookup
+int partyToPrisadex[10] = { 0, 3, 6, 19, 29, 15, 17, 26, 13, 33 };
+
+// ---> PC BOX QUEUE & NAVIGATION VARIABLES <---
+int pcBoxIDs[30];
+int pcBoxHP[30];
+int pcBoxMaxHP[30];
+int pcBoxLevel[30];
+int pcBoxAttack[30];
+int pcBoxEXP[30];
+int pcCursorArea = 0;
+int pcCursorRow = 0;
+int pcCursorCol = 0;
+int pcMenuCooldown = 0;
+int pcSwapState = 0;
+int pcSrcArea = -1;
+int pcSrcRow = -1;
+int pcSrcCol = -1;
+int pcDestArea = -1;
+int pcDestRow = -1;
+int pcDestCol = -1;
+int confirmAnimTicks = 0;
+
+// Temporary active stats for the currently fighting Pokemon
+int playerLevel = 1;
+int playerEXP = 0;
+int myMaxHP = 120;
+int myHP = 120;
+int playerAttack = 21;
+
+// ================= BATTLE SYSTEM VARIABLES =================
+int playerTurn = 1;
+int waitingForEnemy = 0;
+int delayCounter = 0;
+int isChoosingAttack = 0;
+
+int enemyLevel;
+int oppMaxHP;
+int oppHP;
+int enemyAttack;
+
+int projectileX;
+int projectileY;
+int projectileActive = 0;
+int projectileDirection = 1;
+
+char battleMessage[150] = "What will you do?";
+int playerHitEffect = 0;
+int playerBlink = 0;
+int playerTrembleOffset = 0;
+int effectCounter = 0;
+
+// ---> PRISABALL THROW VARIABLES <---
+int imgPokeball1;
+int isBallThrowing = 0;
+float ballT = 0.0f;
+float ballX0 = 200, ballY0 = 300;
+float ballX1 = 467, ballY1 = 1200;
+float ballX2 = 735, ballY2 = 615;
+int ballHit = 0;
+int caughtWaitTimer = 0;
+// ---> OPEN WORLD VARIABLES <---
+int imgPlayerUp;
+int imgPlayerDown;
+int imgPlayerLeft;
+int imgPlayerRight;
+int currentImgPlayer;
+
+int playerX = 400;
+int playerY = 677;
+int playerWidth = 48;
+int playerHeight = 27;
+
+int targetPlayerX = 400;
+int targetPlayerY = 677;
+int isPlayerMoving = 0;
+
+int currentOpponent = -1;
+int isWildEncounter = 0;
+
+// ---> WILD POKEMON TRACKING <---
+char wildNames[6][20] = { "Duskull", "Rattata", "Spearow", "Magikarp", "Pidgeotto", "Scyther" };
+int lastCaughtId = -1;
+
+// ================= PRISADEX SYSTEM VARIABLES =================
+int prisadexSelection = 0;
+int prisadexTopIndex = 0;
+int totalPrisamon = 40;
+char prisadexNames[40][30] = {
+	"Bulbasaur", "Ivysaur", "Venusaur",
+	"Charmander", "Charmeleon", "Charizard",
+	"Squirtle", "Wartortle", "Blastoise",
+	"Caterpie", "Metapod", "Butterfree",
+	"Pidgey", "Pidgeotto", "Pidgeot",
+	"Rattata", "Raticate", "Spearow", "Fearow",
+	"Pikachu", "Voltorb", "Electrode",
+	"Geodude", "Graveler", "Golem", "Onix",
+	"Magikarp", "Gyarados", "Articuno",
+	"Duskull", "Gastly", "Haunter", "Gengar",
+	"Scyther", "Whismur", "Loudred", "Exploud",
+	"Abra", "Kadabra", "Alakazam"
+};
+char prisadexTypes[40][20] = {
+	"Grass", "Grass", "Grass",
+	"Fire", "Fire", "Fire",
+	"Water", "Water", "Water",
+	"Normal", "Normal", "Flying",
+	"Flying", "Flying", "Flying",
+	"Normal", "Normal", "Flying", "Flying",
+	"Electric", "Electric", "Electric",
+	"Rock", "Rock", "Rock", "Rock",
+	"Water", "Water", "Flying",
+	"Ghost", "Ghost", "Ghost", "Ghost",
+	"Grass", "Normal", "Normal", "Normal",
+	"Psychic", "Psychic", "Psychic"
+};
+
+// ================= FUNCTION PROTOTYPES =================
+void triggerTransition(int targetState);
+int isInsideGrass(int px, int py);
+int isInsideTrees16(int px, int py);
+int isWalkable15(int px, int py);
+int isWalkable16(int px, int py);
+void createEnemy();
+void startNewBattle();
+void startDystopianGrindBattle();
+void startNodeBattle(int node);
+void drawHPBar(int x, int y, int current, int max, int width, int height);
+void checkLevelUp();
+void playerAttackMove(int special);
+void enemyAttackMove();
+void updateBattleAnimations();
+void updatePlayerMovement();
+int safeLoadImage(const char* path);
+void loadAllImages();
+void updateLoadingScreen();
+void updateTypewriter();
+void updateFade();
+void updateAutoPan();
+void updateLockScreen();
+void drawLockScreen();
+void updateAutoMapTour();
+void syncCurrentPokemon();
+void loadActivePokemon();
+void prepBattlePokemon();
+void healAllPokemon();
+void getTypeColor(const char* type, int* r, int* g, int* b);
+
+// ================= PARTY HELPERS =================
+void syncCurrentPokemon() {
+	if (currentActivePokemon >= 0 && currentActivePokemon < partySize) {
+		partyHP[currentActivePokemon] = myHP;
+		partyMaxHP[currentActivePokemon] = myMaxHP;
+		partyLevel[currentActivePokemon] = playerLevel;
+		partyAttack[currentActivePokemon] = playerAttack;
+		partyEXP[currentActivePokemon] = playerEXP;
+	}
+}
+
+void loadActivePokemon() {
+	if (currentActivePokemon >= 0 && currentActivePokemon < partySize) {
+		myHP = partyHP[currentActivePokemon];
+		myMaxHP = partyMaxHP[currentActivePokemon];
+		playerLevel = partyLevel[currentActivePokemon];
+		playerAttack = partyAttack[currentActivePokemon];
+		playerEXP = partyEXP[currentActivePokemon];
+	}
+}
+
+void prepBattlePokemon() {
+	if (partyHP[currentActivePokemon] <= 0) {
+		int found = 0;
+		for (int i = 0; i < partySize; i++) {
+			if (partyHP[i] > 0) {
+				currentActivePokemon = i;
+				found = 1;
+				break;
+			}
+		}
+		if (!found && partySize > 0) {
+			partyHP[0] = 1;
+			currentActivePokemon = 0;
+		}
+	}
+	loadActivePokemon();
+}
+
+void healAllPokemon() {
+	for (int i = 0; i < partySize; i++) {
+		if (partyMaxHP[i] > 0) {
+			partyHP[i] = partyMaxHP[i];
+		}
+	}
+	if (currentActivePokemon >= 0 && currentActivePokemon < partySize) {
+		myHP = partyMaxHP[currentActivePokemon];
+	}
+}
+
+void compactParty() {
+	int tempIDs[6];
+	int tempHP[6];
+	int tempMaxHP[6];
+	int tempLvl[6];
+	int tempAtk[6];
+	int tempExp[6];
+	int count = 0;
+
+	for (int i = 0; i < 6; i++) {
+		if (partyIDs[i] != -1) {
+			tempIDs[count] = partyIDs[i];
+			tempHP[count] = partyHP[i];
+			tempMaxHP[count] = partyMaxHP[i];
+			tempLvl[count] = partyLevel[i];
+			tempAtk[count] = partyAttack[i];
+			tempExp[count] = partyEXP[i];
+			count++;
+		}
+	}
+
+	for (int i = 0; i < 6; i++) {
+		if (i < count) {
+			partyIDs[i] = tempIDs[i];
+			partyHP[i] = tempHP[i];
+			partyMaxHP[i] = tempMaxHP[i];
+			partyLevel[i] = tempLvl[i];
+			partyAttack[i] = tempAtk[i];
+			partyEXP[i] = tempExp[i];
+		}
+		else {
+			partyIDs[i] = -1;
+		}
+	}
+	partySize = count;
+	if (currentActivePokemon >= partySize) {
+		currentActivePokemon = 0;
+	}
+}
+
+void doPCSwap() {
+	int tID = -1;
+	int tHP = 0;
+	int tMax = 0;
+	int tLvl = 0;
+	int tAtk = 0;
+	int tExp = 0;
+
+	if (pcSrcArea == 0) {
+		tID = partyIDs[pcSrcRow];
+		tHP = partyHP[pcSrcRow];
+		tMax = partyMaxHP[pcSrcRow];
+		tLvl = partyLevel[pcSrcRow];
+		tAtk = partyAttack[pcSrcRow];
+		tExp = partyEXP[pcSrcRow];
+	}
+	else {
+		int qIdx = pcSrcRow * 5 + pcSrcCol;
+		tID = pcBoxIDs[qIdx];
+		tHP = pcBoxHP[qIdx];
+		tMax = pcBoxMaxHP[qIdx];
+		tLvl = pcBoxLevel[qIdx];
+		tAtk = pcBoxAttack[qIdx];
+		tExp = pcBoxEXP[qIdx];
+	}
+
+	if (pcDestArea == 0) {
+		if (pcSrcArea == 0) {
+			partyIDs[pcSrcRow] = partyIDs[pcDestRow];
+			partyHP[pcSrcRow] = partyHP[pcDestRow];
+			partyMaxHP[pcSrcRow] = partyMaxHP[pcDestRow];
+			partyLevel[pcSrcRow] = partyLevel[pcDestRow];
+			partyAttack[pcSrcRow] = partyAttack[pcDestRow];
+			partyEXP[pcSrcRow] = partyEXP[pcDestRow];
+		}
+		else {
+			int qIdx = pcSrcRow * 5 + pcSrcCol;
+			pcBoxIDs[qIdx] = partyIDs[pcDestRow];
+			pcBoxHP[qIdx] = partyHP[pcDestRow];
+			pcBoxMaxHP[qIdx] = partyMaxHP[pcDestRow];
+			pcBoxLevel[qIdx] = partyLevel[pcDestRow];
+			pcBoxAttack[qIdx] = partyAttack[pcDestRow];
+			pcBoxEXP[qIdx] = partyEXP[pcDestRow];
+		}
+	}
+	else {
+		int qDestIdx = pcDestRow * 5 + pcDestCol;
+		if (pcSrcArea == 0) {
+			partyIDs[pcSrcRow] = pcBoxIDs[qDestIdx];
+			partyHP[pcSrcRow] = pcBoxHP[qDestIdx];
+			partyMaxHP[pcSrcRow] = pcBoxMaxHP[qDestIdx];
+			partyLevel[pcSrcRow] = pcBoxLevel[qDestIdx];
+			partyAttack[pcSrcRow] = pcBoxAttack[qDestIdx];
+			partyEXP[pcSrcRow] = pcBoxEXP[qDestIdx];
+		}
+		else {
+			int qSrcIdx = pcSrcRow * 5 + pcSrcCol;
+			pcBoxIDs[qSrcIdx] = pcBoxIDs[qDestIdx];
+			pcBoxHP[qSrcIdx] = pcBoxHP[qDestIdx];
+			pcBoxMaxHP[qSrcIdx] = pcBoxMaxHP[qDestIdx];
+			pcBoxLevel[qSrcIdx] = pcBoxLevel[qDestIdx];
+			pcBoxAttack[qSrcIdx] = pcBoxAttack[qDestIdx];
+			pcBoxEXP[qSrcIdx] = pcBoxEXP[qDestIdx];
+		}
+	}
+
+	if (pcDestArea == 0) {
+		partyIDs[pcDestRow] = tID;
+		partyHP[pcDestRow] = tHP;
+		partyMaxHP[pcDestRow] = tMax;
+		partyLevel[pcDestRow] = tLvl;
+		partyAttack[pcDestRow] = tAtk;
+		partyEXP[pcDestRow] = tExp;
+	}
+	else {
+		int qIdx = pcDestRow * 5 + pcDestCol;
+		pcBoxIDs[qIdx] = tID;
+		pcBoxHP[qIdx] = tHP;
+		pcBoxMaxHP[qIdx] = tMax;
+		pcBoxLevel[qIdx] = tLvl;
+		pcBoxAttack[qIdx] = tAtk;
+		pcBoxEXP[qIdx] = tExp;
+	}
+
+	compactParty();
+}
+
+// ================= TYPE COLOR HELPER =================
+void getTypeColor(const char* type, int* r, int* g, int* b) {
+	if (strcmp(type, "Fire") == 0) {
+		*r = 252; *g = 122; *b = 8;
+	}
+	else if (strcmp(type, "Water") == 0) {
+		*r = 102; *g = 178; *b = 255;
+	}
+	else if (strcmp(type, "Grass") == 0) {
+		*r = 0; *g = 153; *b = 76;
+	}
+	else if (strcmp(type, "Electric") == 0) {
+		*r = 255; *g = 255; *b = 0;
+	}
+	else if (strcmp(type, "Normal") == 0) {
+		*r = 160; *g = 160; *b = 160;
+	}
+	else if (strcmp(type, "Flying") == 0) {
+		*r = 135; *g = 206; *b = 235;
+	}
+	else if (strcmp(type, "Rock") == 0) {
+		*r = 160; *g = 140; *b = 100;
+	}
+	else if (strcmp(type, "Ghost") == 0) {
+		*r = 128; *g = 70; *b = 160;
+	}
+	else if (strcmp(type, "Psychic") == 0) {
+		*r = 255; *g = 105; *b = 180;
+	}
+	else {
+		*r = 255; *g = 255; *b = 255;
+	}
+}
+
+// ================= HELPER FUNCTIONS =================
+void triggerTransition(int targetState) {
+	if (!isFading) {
+		if (gameState != 12 && gameState != 121) {
+			previousGameState = gameState;
+		}
+		nextGameState = targetState;
+		isFading = 1;
+		fadeDirection = 1;
+		fadeAlpha = 0.0f;
+	}
+}
+
+int isInsideGrass(int px, int py) {
+	if (px >= 130 && px <= 300 && py >= 450 && py <= 580) {
+		return 1;
+	}
+	if (px >= 510 && px <= 750 && py >= 115 && py <= 650) {
+		return 1;
+	}
+	return 0;
+}
+
+int isInsideTrees16(int px, int py) {
+	if (px >= 450 && px <= 1024 && py >= 223 && py <= 450) {
+		return 1;
+	}
+	if (px >= 0 && px <= 150 && py >= 223 && py <= 800) {
+		return 1;
+	}
+	if (px >= 500 && px <= 800 && py >= 500 && py <= 650) {
+		return 1;
+	}
+	return 0;
+}
+
+int isWalkable15(int px, int py) {
+	if (px < 0 || px > 1024 - 48) {
+		return 0;
+	}
+	if (py < 100 || py > 900) {
+		return 0;
+	}
+	if (px >= 120 && px <= 1024 && py >= 115 && py <= 230) {
+		return 1;
+	}
+	if (px >= 410 && px <= 510 && py >= 230 && py <= 450) {
+		return 1;
+	}
+	if (px >= 130 && px <= 300 && py >= 450 && py <= 580) {
+		return 1;
+	}
+	if (px >= 250 && px <= 410 && py >= 300 && py <= 750) {
+		return 1;
+	}
+	if (px >= 130 && px <= 750 && py >= 650 && py <= 750) {
+		return 1;
+	}
+	if (px >= 410 && px <= 520 && py >= 450 && py <= 900) {
+		return 1;
+	}
+	if (px >= 510 && px <= 750 && py >= 115 && py <= 650) {
+		return 1;
+	}
+	if (px >= 380 && px <= 410 && py >= 700 && py <= 780) {
+		return 1;
+	}
+	if (px >= 520 && px <= 600 && py >= 700 && py <= 780) {
+		return 1;
+	}
+	return 0;
+}
+
+int isWalkable16(int px, int py) {
+	if (px < 0 || px > 1024 - 48) {
+		return 0;
+	}
+	if (py < 100 || py > 900) {
+		return 0;
+	}
+	if (px >= 100 && px <= 1024 && py >= 115 && py <= 180) {
+		return 1;
+	}
+	if (px >= 100 && px <= 200 && py >= 150 && py <= 350) {
+		return 1;
+	}
+	if (px >= 150 && px <= 450 && py >= 300 && py <= 380) {
+		return 1;
+	}
+	if (px >= 350 && px <= 480 && py >= 350 && py <= 520) {
+		return 1;
+	}
+	if (px >= 300 && px <= 350 && py >= 380 && py <= 430) {
+		return 1;
+	}
+	if (px >= 450 && px <= 850 && py >= 450 && py <= 550) {
+		return 1;
+	}
+	if (px >= 750 && px <= 880 && py >= 350 && py <= 700) {
+		return 1;
+	}
+	if (px >= 850 && px <= 910 && py >= 400 && py <= 450) {
+		return 1;
+	}
+	if (px >= 750 && px <= 950 && py >= 650 && py <= 750) {
+		return 1;
+	}
+	if (px >= 900 && px <= 1000 && py >= 750 && py <= 900) {
+		return 1;
+	}
+	if (px >= 50 && px <= 100 && py >= 450 && py <= 520) {
+		return 1;
+	}
+	return 0;
+}
+
+void updatePlayerMovement() {
+	if ((gameState == 15 || gameState == 16) && isPlayerMoving && !isFading) {
+		if (playerX < targetPlayerX) {
+			playerX += 48;
+			currentImgPlayer = imgPlayerRight;
+		}
+		else if (playerX > targetPlayerX) {
+			playerX -= 48;
+			currentImgPlayer = imgPlayerLeft;
+		}
+		else if (playerY < targetPlayerY) {
+			playerY += 27;
+			currentImgPlayer = imgPlayerUp;
+		}
+		else if (playerY > targetPlayerY) {
+			playerY -= 27;
+			currentImgPlayer = imgPlayerDown;
+		}
+
+		if (playerX == targetPlayerX && playerY == targetPlayerY) {
+			isPlayerMoving = 0;
+
+			if (gameState == 15 && playerY >= 790 && playerX >= 350 && playerX <= 650) {
+				if (nodesCleared < 3) {
+					showOakBlockDialogue = 1;
+					currentOakBlockIndex = 0;
+					currentCharCount = 0;
+					playerY -= 27;
+					targetPlayerY = playerY;
+				}
+				else {
+					triggerTransition(16);
+					playerX = 850;
+					playerY = 160;
+					targetPlayerX = playerX;
+					targetPlayerY = playerY;
+				}
+			}
+			else if (gameState == 16 && playerY <= 150 && playerX >= 700 && playerX <= 1000) {
+				triggerTransition(15);
+				playerX = 480;
+				playerY = 750;
+				targetPlayerX = playerX;
+				targetPlayerY = playerY;
+			}
+			else if (gameState == 15 && isInsideGrass(playerX, playerY)) {
+				if (rand() % 100 < 15) {
+					isWildEncounter = 1;
+					currentOpponent = rand() % 3;
+					startNewBattle();
+				}
+			}
+			else if (gameState == 16 && isInsideTrees16(playerX, playerY)) {
+				if (rand() % 100 < 15) {
+					isWildEncounter = 1;
+					currentOpponent = 3 + (rand() % 3);
+					startNewBattle();
+				}
+			}
+		}
+	}
+}
+
+// ================= BATTLE LOGIC =================
+void createEnemy() {
+	enemyLevel = playerLevel + rand() % 2;
+	oppMaxHP = 95 + enemyLevel * 25;
+	oppHP = oppMaxHP;
+	enemyAttack = 13 + enemyLevel * 4;
+}
+
+void startNewBattle() {
+	currentActivePokemon = 0;
+	prepBattlePokemon();
+	isWildEncounter = 1;
+	currentEnemyIndex = 0;
+	totalEnemies = 1;
+	enemyImages[0] = imgWildPoke[currentOpponent];
+
+	if (currentOpponent == 0) {
+		isEnemyGhost = 1;
+		strcpy(enemyBattleTypes[0], "Ghost");
+	}
+	else if (currentOpponent == 1) {
+		isEnemyGhost = 0;
+		strcpy(enemyBattleTypes[0], "Normal");
+	}
+	else if (currentOpponent == 2) {
+		isEnemyGhost = 0;
+		strcpy(enemyBattleTypes[0], "Flying");
+	}
+	else if (currentOpponent == 3) {
+		isEnemyGhost = 0;
+		strcpy(enemyBattleTypes[0], "Water");
+	}
+	else if (currentOpponent == 4) {
+		isEnemyGhost = 0;
+		strcpy(enemyBattleTypes[0], "Flying");
+	}
+	else {
+		isEnemyGhost = 0;
+		strcpy(enemyBattleTypes[0], "Grass");
+	}
+
+	createEnemy();
+	playerTurn = 1;
+	waitingForEnemy = 0;
+	projectileActive = 0;
+	potionCount = 3;
+	isChoosingAttack = 0;
+	strcpy(battleMessage, "A Wild Pokemon Appeared!");
+	triggerTransition(12);
+}
+
+void startDystopianGrindBattle() {
+	currentActivePokemon = 0;
+	prepBattlePokemon();
+	isWildEncounter = 0;
+	currentDystopianEnemyIndex = 0;
+	totalDystopianEnemies = 3;
+	potionCount = 3;
+	playerTurn = 1;
+	waitingForEnemy = 0;
+	projectileActive = 0;
+	isChoosingAttack = 0;
+
+	isEnemyGhost = 1;
+	strcpy(enemyBattleTypes[0], "Ghost");
+	strcpy(enemyBattleTypes[1], "Ghost");
+	strcpy(enemyBattleTypes[2], "Ghost");
+
+	createEnemy();
+	strcpy(battleMessage, "Dystopian Champion Appears!");
+	triggerTransition(121);
+}
+
+void startNodeBattle(int node) {
+	currentActivePokemon = 0;
+	prepBattlePokemon();
+	isWildEncounter = 0;
+	currentActiveNode = node;
+	currentEnemyIndex = 0;
+	potionCount = 3;
+	playerTurn = 1;
+	waitingForEnemy = 0;
+	projectileActive = 0;
+	isChoosingAttack = 0;
+
+	isEnemyGhost = 0;
+
+	if (node == 1) {
+		enemyImages[0] = imgCaterpieFront;
+		strcpy(enemyBattleTypes[0], "Normal");
+		totalEnemies = 1;
+	}
+	else if (node == 2) {
+		enemyImages[0] = imgNormal[3];
+		enemyImages[1] = imgNormal[2];
+		strcpy(enemyBattleTypes[0], "Normal");
+		strcpy(enemyBattleTypes[1], "Normal");
+		totalEnemies = 2;
+	}
+	else if (node == 3) {
+		enemyImages[0] = imgRock[0];
+		enemyImages[1] = imgFlying[2];
+		strcpy(enemyBattleTypes[0], "Rock");
+		strcpy(enemyBattleTypes[1], "Flying");
+		totalEnemies = 2;
+	}
+	else if (node == 4) {
+		enemyImages[0] = imgWater[3];
+		enemyImages[1] = imgWater[3];
+		enemyImages[2] = imgWater[4];
+		strcpy(enemyBattleTypes[0], "Water");
+		strcpy(enemyBattleTypes[1], "Water");
+		strcpy(enemyBattleTypes[2], "Water");
+		totalEnemies = 3;
+	}
+	else if (node == 5) {
+		enemyImages[0] = imgElectric[0];
+		enemyImages[1] = imgElectric[2];
+		enemyImages[2] = imgElectric[1];
+		strcpy(enemyBattleTypes[0], "Electric");
+		strcpy(enemyBattleTypes[1], "Electric");
+		strcpy(enemyBattleTypes[2], "Electric");
+		totalEnemies = 3;
+	}
+	else if (node == 6) {
+		enemyImages[0] = imgRock[3];
+		enemyImages[1] = imgRock[1];
+		enemyImages[2] = imgFlying[0];
+		strcpy(enemyBattleTypes[0], "Rock");
+		strcpy(enemyBattleTypes[1], "Rock");
+		strcpy(enemyBattleTypes[2], "Flying");
+		totalEnemies = 3;
+	}
+	else if (node == 7) {
+		enemyImages[0] = imgMap2Normal[0];
+		enemyImages[1] = imgMap2Normal[1];
+		enemyImages[2] = imgMap2Normal[2];
+		strcpy(enemyBattleTypes[0], "Normal");
+		strcpy(enemyBattleTypes[1], "Normal");
+		strcpy(enemyBattleTypes[2], "Normal");
+		totalEnemies = 3;
+	}
+	else if (node >= 8) {
+		enemyImages[0] = imgMap2Psychic[0];
+		enemyImages[1] = imgMap2Psychic[1];
+		enemyImages[2] = imgMap2Psychic[2];
+		strcpy(enemyBattleTypes[0], "Psychic");
+		strcpy(enemyBattleTypes[1], "Psychic");
+		strcpy(enemyBattleTypes[2], "Psychic");
+		totalEnemies = 3;
+	}
+
+	createEnemy();
+	strcpy(battleMessage, "Trainer wants to battle!");
+	triggerTransition(12);
+}
+
+void drawHPBar(int x, int y, int current, int max, int width, int height) {
+	iSetColor(100, 100, 100);
+	iFilledRectangle(x, y, width, height);
+	double ratio = (double)current / max;
+	if (ratio < 0) {
+		ratio = 0;
+	}
+	int hpWidth = (int)(width * ratio);
+	if (ratio > 0.5) {
+		iSetColor(0, 255, 0);
+	}
+	else if (ratio > 0.25) {
+		iSetColor(255, 165, 0);
+	}
+	else {
+		iSetColor(255, 0, 0);
+	}
+	iFilledRectangle(x, y, hpWidth, height);
+}
+
+void checkLevelUp() {
+	if (playerEXP >= 100) {
+		playerLevel++;
+		playerEXP -= 100;
+		myMaxHP += 25;
+		playerAttack += 5;
+		myHP = myMaxHP;
+		syncCurrentPokemon();
+	}
+}
+
+void playerAttackMove(int special) {
+	projectileX = 350;
+	projectileY = 350;
+	projectileDirection = 1;
+	projectileActive = 1;
+
+	int pID = partyIDs[currentActivePokemon];
+
+	// --- [CUSTOMIZE] PLAYER PROJECTILE COLORS HERE ---
+	if (pID != -1 && pID < 10) {
+		int prisadexIdx = partyToPrisadex[pID];
+		getTypeColor(prisadexTypes[prisadexIdx], &projColorR, &projColorG, &projColorB);
+	}
+
+	int damage;
+	if (special) {
+		if (rand() % 4 == 0) {
+			sprintf(battleMessage, "Special Missed!");
+			waitingForEnemy = 1;
+			delayCounter = 0;
+			playerTurn = 0;
+			return;
+		}
+		damage = playerAttack * 2 + rand() % 15;
+		sprintf(battleMessage, "Special Attack!");
+	}
+	else {
+		if (isEnemyGhost == 1) {
+			damage = 0;
+			sprintf(battleMessage, "It doesn't affect the Ghost Prisamon!");
+		}
+		else {
+			damage = playerAttack + rand() % 8;
+			sprintf(battleMessage, "Normal Attack!");
+		}
+	}
+	oppHP -= damage;
+
+	if (oppHP <= 0) {
+		oppHP = 0;
+		playerEXP += 60;
+		checkLevelUp();
+		syncCurrentPokemon();
+
+		if (gameState == 121) {
+			if (currentDystopianEnemyIndex < totalDystopianEnemies - 1) {
+				currentDystopianEnemyIndex++;
+				createEnemy();
+				sprintf(battleMessage, "Next opponent approaches!");
+				playerTurn = 1;
+				waitingForEnemy = 0;
+				return;
+			}
+			else {
+				healAllPokemon();
+				gameState = 24;
+				return;
+			}
+		}
+
+		if (currentEnemyIndex < totalEnemies - 1) {
+			currentEnemyIndex++;
+			createEnemy();
+			sprintf(battleMessage, "Opponent sent out next Prisamon!");
+			playerTurn = 1;
+			waitingForEnemy = 0;
+			return;
+		}
+		else {
+			healAllPokemon();
+			gameState = 13;
+			if (!isWildEncounter) {
+				if (currentActiveNode > nodesCleared) {
+					nodesCleared = currentActiveNode;
+				}
+			}
+			return;
+		}
+	}
+	waitingForEnemy = 1;
+	delayCounter = 0;
+	playerTurn = 0;
+}
+
+void enemyAttackMove() {
+	projectileX = 650;
+	projectileY = 550;
+	projectileDirection = -1;
+	projectileActive = 1;
+
+	// --- [CUSTOMIZE] ENEMY PROJECTILE MATCHES ENEMY TYPE ---
+	if (gameState == 121) {
+		getTypeColor(enemyBattleTypes[currentDystopianEnemyIndex], &projColorR, &projColorG, &projColorB);
+	}
+	else {
+		getTypeColor(enemyBattleTypes[currentEnemyIndex], &projColorR, &projColorG, &projColorB);
+	}
+
+	int isPlayerGhost = 0;
+	if (partyIDs[currentActivePokemon] == 4) {
+		isPlayerGhost = 1;
+	}
+
+	int damage = 0;
+
+	if (rand() % 100 < 70) {
+		if (isPlayerGhost == 1) {
+			damage = 0;
+			sprintf(battleMessage, "Enemy attack phased right through!");
+		}
+		else {
+			damage = enemyAttack + rand() % 10;
+			sprintf(battleMessage, "Enemy Attacked!");
+		}
+	}
+	else {
+		damage = (int)(enemyAttack * 1.5) + rand() % 10;
+		if (rand() % 6 == 0) {
+			damage *= 2;
+			sprintf(battleMessage, "Enemy CRITICAL Special!");
+		}
+		else {
+			sprintf(battleMessage, "Enemy used a Special Attack!");
+		}
+	}
+
+	myHP -= damage;
+	playerHitEffect = 1;
+	effectCounter = 0;
+
+	if (myHP <= 0) {
+		myHP = 0;
+		syncCurrentPokemon();
+
+		int nextPoke = -1;
+		for (int i = 0; i < partySize; i++) {
+			if (partyHP[i] > 0) {
+				nextPoke = i;
+				break;
+			}
+		}
+
+		if (nextPoke != -1) {
+			currentActivePokemon = nextPoke;
+			loadActivePokemon();
+			sprintf(battleMessage, "Prisamon fainted! Swapped!");
+			playerTurn = 1;
+			waitingForEnemy = 0;
+			return;
+		}
+		else {
+			healAllPokemon();
+			gameState = 14;
+			waitingForEnemy = 0;
+			return;
+		}
+	}
+	playerTurn = 1;
+	waitingForEnemy = 0;
+}
+
+void updateBattleAnimations() {
+	if (gameState != 12 && gameState != 121) {
+		return;
+	}
+
+	if (projectileActive) {
+		projectileX += 30 * projectileDirection;
+		projectileY += 20 * projectileDirection;
+		if (projectileDirection == 1 && projectileX >= 650) {
+			projectileActive = 0;
+		}
+		else if (projectileDirection == -1 && projectileX <= 350) {
+			projectileActive = 0;
+		}
+	}
+
+	if (waitingForEnemy) {
+		delayCounter++;
+		if (delayCounter > 30) {
+			enemyAttackMove();
+			delayCounter = 0;
+		}
+	}
+	if (playerHitEffect) {
+		effectCounter++;
+		playerBlink = effectCounter % 4;
+		if (effectCounter % 2 == 0) {
+			playerTrembleOffset = -10;
+		}
+		else {
+			playerTrembleOffset = 10;
+		}
+		if (effectCounter > 20) {
+			playerHitEffect = 0;
+			playerBlink = 0;
+			playerTrembleOffset = 0;
+		}
+	}
+
+	if (isBallThrowing) {
+		ballT += 0.03f;
+		if (ballT >= 1.0f) {
+			ballT = 1.0f;
+			isBallThrowing = 0;
+			ballHit = 1;
+			caughtWaitTimer = 30; // delay in ticks before catching
+		}
+	}
+	else if (ballHit) {
+		if (caughtWaitTimer > 0) {
+			caughtWaitTimer--;
+		}
+		else {
+			ballHit = 0;
+			if (partySize < 6) {
+				partyIDs[partySize] = currentOpponent + 4;
+				partyHP[partySize] = oppMaxHP;
+				partyMaxHP[partySize] = oppMaxHP;
+				partyLevel[partySize] = enemyLevel;
+				partyAttack[partySize] = enemyAttack;
+				partyEXP[partySize] = 0;
+				partySize++;
+			}
+			else {
+				for (int i = 0; i < 30; i++) {
+					if (pcBoxIDs[i] == -1) {
+						pcBoxIDs[i] = currentOpponent + 4;
+						pcBoxHP[i] = oppMaxHP;
+						pcBoxMaxHP[i] = oppMaxHP;
+						pcBoxLevel[i] = enemyLevel;
+						pcBoxAttack[i] = enemyAttack;
+						pcBoxEXP[i] = 0;
+						break;
+					}
+				}
+			}
+			healAllPokemon();
+			gameState = 20;
+		}
+	}
+}
+
+// ================= LOAD =================
+int safeLoadImage(const char* path) {
+	FILE* file = fopen(path, "rb");
+	if (file == NULL) {
+		printf("Error: Missing file %s\n", path);
+		exit(1);
+	}
+	fclose(file);
+	return iLoadImage((char*)path);
+}
+
+void loadAllImages() {
+	imgPokeball1 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\pokeball1.png");
+	imgLoading1 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\LOADING PAGE\\LAODING 1.bmp");
+	imgLoading2 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\LOADING PAGE\\LOADING 2.bmp");
+	imgLoading3 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\LOADING PAGE\\LOADING 3.bmp");
+	imgLoading4 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\LOADING PAGE\\LOADING 4.bmp");
+	imgHeroPage = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\hERO_PAGE\\Hero_page.png");
+	imgOak = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\character\\proferrsor oak - Edited.png");
+	imgChatbox = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\CHATBOX\\chatbox.bmp");
+	prisamonPaths[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\PRISADEX\\DETAIL\\BULBASOUR.bmp");
+	prisamonPaths[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\PRISADEX\\DETAIL\\CHARMEDER.bmp");
+	prisamonPaths[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\PRISADEX\\DETAIL\\SQUIRTLE.bmp");
+	imgFire[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Charmender.png");
+	imgFire[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Charmeleon.png");
+	imgFire[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Charizard.png");
+	imgWater[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Squirtle.png");
+	imgWater[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Wartotle.png");
+	imgWater[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Blastoise.png");
+	imgWater[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\magikarp.png");
+	imgWater[4] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\gyarados.png");
+
+	imgGrass[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Balbasour.png");
+	imgGrass[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Ivysaur.png");
+	imgGrass[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Venusaur.png");
+
+	imgFlying[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Artiquno.png");
+	imgFlying[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\butterfree.png");
+	imgFlying[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Fearow.png");
+	imgFlying[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\pidgy.png");
+	imgFlying[4] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Pidgeotto.png");
+	imgFlying[5] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\pidgeot.png");
+	imgFlying[6] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\spearow.png");
+	imgElectric[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\voltorb.png");
+	imgElectric[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\pikachu.png");
+	imgElectric[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Electrode.png");
+	imgRock[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Geodude.png");
+	imgRock[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\golem.png");
+	imgRock[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\graveler.png");
+	imgRock[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\onix.png");
+	imgNormal[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\caterpie.png");
+	imgNormal[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Metapod.png");
+	imgNormal[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\raticate.png");
+	imgNormal[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\rattata.png");
+
+	prisamonProfilePaths[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Balbasour.png");
+	prisamonProfilePaths[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Charmender.png");
+	prisamonProfilePaths[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Squirtle.png");
+
+	imgPikachuProfile = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\pikachu.png");
+	imgMap1 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Stage screen\\map-1.bmp");
+	imgMap2 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Stage screen\\map-2.bmp");
+	imgMap3 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Stage screen\\map-3.bmp");
+	imgMap4 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Stage screen\\map-4.bmp");
+	imgGrassBattleground = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\grass.png");
+	imgPrisamonBack[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Bulbasaur_back.png");
+	imgPrisamonBack[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Charmender_Back.png");
+	imgPrisamonBack[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\squirtle_back.png");
+	imgPikachuBack = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Pikachu_back.png");
+	imgCaterpieFront = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\front_Pokemon\\Caterpie_front.png");
+	imgOpenWorldBG = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Openworld\\BG1.png");
+	imgPlayerUp = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\character\\lucas\\lucasB.png");
+	imgPlayerDown = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\character\\lucas\\lucasF.png");
+	imgPlayerLeft = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\character\\lucas\\lucasL.png");
+	imgPlayerRight = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\character\\lucas\\lucasR.png");
+	currentImgPlayer = imgPlayerDown;
+
+	imgWildPokeBack[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Duskull_back.png");
+	imgWildPokeBack[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\rattata_back.png");
+	imgWildPokeBack[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\sprearow.png");
+	imgWildPokeBack[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Magicarp_back.png");
+	imgWildPokeBack[4] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Pidgeotto_Back.png");
+	imgWildPokeBack[5] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\back_pokemon\\Scyther_Back.png");
+
+	imgVillage16 = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Openworld\\BG2.png");
+	imgBag = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\bag.png");
+	imgItemUI = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\items UI.png");
+	imgGrindBattle = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\dystopian.jpg");
+	imgGastly = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\gastly.png");
+	imgHaunter = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\haunter.png");
+	imgGengar = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\gengar.png");
+	dystopianEnemyImages[0] = imgGastly;
+	dystopianEnemyImages[1] = imgHaunter;
+	dystopianEnemyImages[2] = imgGengar;
+	imgPrisadex = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\prisadex (2).png");
+	imgTraining = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\Training.png");
+	imgPartyIndex = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\Utils UI\\party index.png");
+
+	imgSmall[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Bulbasaur_small.png");
+	imgSmall[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Charmender_small.png");
+	imgSmall[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Squirtle_small.png");
+	imgSmall[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Pikachu_small.png");
+	imgSmall[4] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Dukskull_small.png");
+	imgSmall[5] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Ratata_small.png");
+	imgSmall[6] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Spearow_small.png");
+	imgSmall[7] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Magicarp_small.png");
+	imgSmall[8] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Pidgeotto_small.png");
+	imgSmall[9] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Party\\Scyther_small.png");
+
+	imgWildPoke[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\front_Pokemon\\Duskull.png");
+	imgWildPoke[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\front_Pokemon\\Rattata.png");
+	imgWildPoke[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\front_Pokemon\\Spearow.png");
+	imgWildPoke[3] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\magikarp.png");
+	imgWildPoke[4] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Pidgeotto.png");
+	imgWildPoke[5] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\Scyther.png");
+	
+	imgMap2Normal[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\whismur (2).png");
+	imgMap2Normal[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\loudred.png");
+	imgMap2Normal[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\exploud.png");
+	
+	imgMap2Psychic[0] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\abra1.png");
+	imgMap2Psychic[1] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\kadabra.png");
+	imgMap2Psychic[2] = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\POKEMON\\Prisamon_profile\\alakazam (2).png");
+	
+	imgCaveBattleground = safeLoadImage("C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\battle_background\\cave.png");
+}
+void updateLoadingScreen() {
+	if (gameState == 1) {
+		currentFrame++;
+		totalLoadingTicks++;
+		if (currentFrame > 4) {
+			currentFrame = 1;
+		}
+		if (totalLoadingTicks >= 26) {
+			triggerTransition(2);
+		}
+	}
+}
+
+void updateTypewriter() {
+	if (gameState == 2 && showDialogue == 1) {
+		if (currentCharCount < (int)strlen(dialogueArray[currentDialogueIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if (gameState == 4) {
+		if (currentCharCount < (int)strlen(endDialogueArray[currentEndDialogueIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if (gameState == 6) {
+		if (currentCharCount < (int)strlen(pikachuDialogueArray[currentPikachuDialogueIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if (gameState == 8 && showOakMapDialogue == 1) {
+		if (currentCharCount < (int)strlen(oakMapDialogueArray[currentOakMapDialogueIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if ((gameState == 15 || gameState == 16) && showOakWildIntro == 1) {
+		if (currentCharCount < (int)strlen(oakWildIntroArray[currentOakWildIntroIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if ((gameState == 15 || gameState == 16) && showOakBlockDialogue == 1) {
+		if (currentCharCount < (int)strlen(oakBlockArray[currentOakBlockIndex])) {
+			currentCharCount++;
+		}
+	}
+	else if (gameState == 7 && showOakGrindIntro == 1) {
+		if (currentCharCount < (int)strlen(oakGrindIntroArray[currentOakGrindIntroIndex])) {
+			currentCharCount++;
+		}
+	}
+}
+
+void updateFade() {
+	if (isFading) {
+		fadeAlpha += 0.05f * fadeDirection;
+		if (fadeAlpha >= 1.0f && fadeDirection == 1) {
+			fadeAlpha = 1.0f;
+			gameState = nextGameState;
+			fadeDirection = -1;
+		}
+		else if (fadeAlpha <= 0.0f && fadeDirection == -1) {
+			fadeAlpha = 0.0f;
+			isFading = 0;
+		}
+	}
+}
+
+void updateAutoPan() {
+	if (gameState == 7 && !heroPageVisited && heroPageX > -1024) {
+		heroPageX -= 8;
+		if (heroPageX < -1024) {
+			heroPageX = -1024;
+		}
+	}
+}
+
+void updateLockScreen() {
+	if (lockScreenTimer > 0) {
+		lockScreenTimer--;
+	}
+}
+
+void drawLockScreen() {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(1.0f, 1.0f, 1.0f, 0.6f);
+	iFilledRectangle(0, 0, 1024, 1024);
+	glDisable(GL_BLEND);
+
+	iSetColor(60, 60, 60);
+	iFilledRectangle(462, 450, 100, 80);
+	iSetColor(0, 0, 0);
+	iText(365, 410, "complete previous stage to unlock it", GLUT_BITMAP_HELVETICA_18);
+}
+
+void updateAutoMapTour() {
+	if (isFirstTimeMapTour && !isFading) {
+		if (gameState >= 8 && gameState <= 11) {
+			mapTourTimer++;
+			if (mapTourTimer >= 50) {
+				if (gameState == 8) {
+					map1Completed = 1;
+					triggerTransition(9);
+				}
+				else if (gameState == 9) {
+					map2Completed = 1;
+					triggerTransition(10);
+				}
+				else if (gameState == 10) {
+					map3Completed = 1;
+					triggerTransition(11);
+				}
+				else if (gameState == 11) {
+					triggerTransition(8);
+					isFirstTimeMapTour = 0;
+				}
+				mapTourTimer = 0;
+			}
+		}
+	}
+}
+
+// ================= SAVE & LOAD SYSTEM =================
+void saveGameState() {
+	FILE *fp = fopen("save_data.txt", "w");
+	if (fp != NULL) {
+		fprintf(fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %lld ",
+			potionCount, coins, prisaballs, evolutionStones, xpCandies,
+			nodesCleared, selectedPrisamon, heroPageVisited,
+			map1Completed, map2Completed, map3Completed, isFirstTimeMapTour,
+			caughtWild[0], caughtWild[1], caughtWild[2], caughtWild[3], caughtWild[4], caughtWild[5], hasSeenWildIntro, hasSeenGrindIntro, lastGrindTime);
+
+		fprintf(fp, "%d %d ", partySize, currentActivePokemon);
+		for (int i = 0; i < 6; i++) {
+			fprintf(fp, "%d %d %d %d %d %d ", partyIDs[i], partyHP[i], partyMaxHP[i], partyLevel[i], partyAttack[i], partyEXP[i]);
+		}
+		fclose(fp);
+		printf("Game Saved Successfully!\n");
+	}
+	else {
+		printf("Error: Could not create save file.\n");
+	}
+}
+
+void loadGameState() {
+	FILE *fp = fopen("save_data.txt", "r");
+	if (fp != NULL) {
+		fscanf(fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %lld",
+			&potionCount, &coins, &prisaballs, &evolutionStones, &xpCandies,
+			&nodesCleared, &selectedPrisamon, &heroPageVisited,
+			&map1Completed, &map2Completed, &map3Completed, &isFirstTimeMapTour,
+			&caughtWild[0], &caughtWild[1], &caughtWild[2], &caughtWild[3], &caughtWild[4], &caughtWild[5], &hasSeenWildIntro, &hasSeenGrindIntro, &lastGrindTime);
+
+		fscanf(fp, "%d %d", &partySize, &currentActivePokemon);
+		for (int i = 0; i < 6; i++) {
+			fscanf(fp, "%d %d %d %d %d %d", &partyIDs[i], &partyHP[i], &partyMaxHP[i], &partyLevel[i], &partyAttack[i], &partyEXP[i]);
+		}
+		fclose(fp);
+
+		loadActivePokemon();
+
+		if (time(NULL) - lastGrindTime >= grindCooldown) {
+			canGrind = 1;
+		}
+		else {
+			canGrind = 0;
+		}
+		printf("Game Loaded Successfully!\n");
+
+		gameState = 7;
+		heroPageX = -1024;
+	}
+	else {
+		printf("No save file found. Start a New Game!\n");
+	}
+}
+
+// ================= DRAW =================
+void iDraw() {
+	if (imagesLoaded == 0) {
+		loadAllImages();
+		imagesLoaded = 1;
+	}
+	iClear();
+
+	if (gameState == 0) {
+		iShowImage(0, 0, 1024, 1024, imgLoading1);
+
+		iSetColor(255, 102, 0);
+		iFilledRectangle(100, 600, 350, 60);
+		iSetColor(0, 0, 0);
+		iText(200, 620, "NEW GAME", GLUT_BITMAP_TIMES_ROMAN_24);
+
+		iSetColor(255, 102, 0);
+		iFilledRectangle(100, 500, 350, 60);
+		iSetColor(0, 0, 0);
+		iText(190, 520, "SAVE GAME", GLUT_BITMAP_TIMES_ROMAN_24);
+
+		iSetColor(255, 102, 0);
+		iFilledRectangle(100, 400, 350, 60);
+		iSetColor(0, 0, 0);
+		iText(160, 420, "CURRENT GAME", GLUT_BITMAP_TIMES_ROMAN_24);
+
+		iSetColor(170, 230, 200);
+		iText(350, 80, "NOW LOADING... O", GLUT_BITMAP_TIMES_ROMAN_24);
+	}
+	else if (gameState == 1) {
+		int frames[] = { imgLoading1, imgLoading2, imgLoading3, imgLoading4 };
+		iShowImage(0, 0, 1024, 1024, frames[currentFrame - 1]);
+	}
+	else if (gameState == 2) {
+		iShowImage(heroPageX, 0, 2048, 1024, imgHeroPage);
+		if (showDialogue) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(0.0f, 0.0f, 0.0f, 0.75f);
+			iFilledRectangle(0, 0, 1024, 1024);
+			glDisable(GL_BLEND);
+
+			iShowImage(650, 175, 300, 400, imgOak);
+			iShowImage(112, 30, 800, 150, imgChatbox);
+			iSetColor(0, 0, 0);
+			char buf[100];
+			strncpy(buf, dialogueArray[currentDialogueIndex], currentCharCount);
+			buf[currentCharCount] = '\0';
+			iText(150, 80, buf, GLUT_BITMAP_TIMES_ROMAN_24);
+		}
+	}
+	else if (gameState == 3) {
+		iShowImage(0, 0, 1024, 1024, prisamonPaths[currentPrisamonIndex]);
+	}
+	else if (gameState == 4 || gameState == 6) {
+		iShowImage(heroPageX, 0, 2048, 1024, imgHeroPage);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(0.0f, 0.0f, 0.0f, 0.25f);
+		iFilledRectangle(0, 0, 1024, 1024);
+		glDisable(GL_BLEND);
+
+		if (gameState == 4) {
+			iShowImage(150, 180, 250, 250, prisamonProfilePaths[selectedPrisamon]);
+		}
+		else {
+			iShowImage(150, 180, 250, 250, imgPikachuProfile);
+		}
+
+		iShowImage(650, 175, 300, 400, imgOak);
+		iShowImage(112, 30, 800, 150, imgChatbox);
+		iSetColor(0, 0, 0);
+
+		char buf[100];
+		if (gameState == 4) {
+			strncpy(buf, endDialogueArray[currentEndDialogueIndex], currentCharCount);
+		}
+		else {
+			strncpy(buf, pikachuDialogueArray[currentPikachuDialogueIndex], currentCharCount);
+		}
+		buf[currentCharCount] = '\0';
+		iText(150, 80, buf, GLUT_BITMAP_TIMES_ROMAN_24);
+	}
+	else if (gameState == 7) {
+		iShowImage(heroPageX, 0, 2048, 1024, imgHeroPage);
+
+		if (!heroPageVisited && heroPageX <= -1024) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
+			double scL = 506;
+			double scR = 726;
+			double scB = 30;
+			double scT = 230;
+
+			iFilledRectangle(0, scT, 1024, 1024 - scT);
+			iFilledRectangle(0, 0, 1024, scB);
+			iFilledRectangle(0, scB, scL, scT - scB);
+			iFilledRectangle(scR, scB, 1024 - scR, scT - scB);
+			glDisable(GL_BLEND);
+
+			iSetColor(255, 255, 255);
+			iText(scL, scT + 15, "Click ANYWHERE to proceed!", GLUT_BITMAP_HELVETICA_18);
+		}
+
+		if (showOakGrindIntro) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+			iFilledRectangle(0, 0, 1024, 1024);
+			glDisable(GL_BLEND);
+
+			iShowImage(650, 175, 300, 400, imgOak);
+			iShowImage(112, 30, 800, 150, imgChatbox);
+			iSetColor(0, 0, 0);
+
+			char buf[100];
+			strncpy(buf, oakGrindIntroArray[currentOakGrindIntroIndex], currentCharCount);
+			buf[currentCharCount] = '\0';
+			iText(150, 80, buf, GLUT_BITMAP_TIMES_ROMAN_24);
+		}
+	}
+	else if (gameState >= 8 && gameState <= 11) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		int mX = 50;
+		int mY = 100;
+		int mW = 924;
+		int mH = 824;
+
+		if (gameState == 8) {
+			iShowImage(mX, mY, mW, mH, imgMap1);
+			if (isFirstTimeMapTour == 0) {
+				for (int i = 0; i < 6; i++) {
+					if (nodesCleared == i) {
+						glEnable(GL_BLEND);
+						glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+						glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+						iFilledCircle(nodeX[i], nodeY[i], 30);
+						glDisable(GL_BLEND);
+					}
+					else if (nodesCleared > i) {
+						iSetColor(0, 200, 0);
+						iFilledCircle(nodeX[i], nodeY[i], 30);
+						iSetColor(255, 255, 255);
+						for (int j = -2; j <= 2; j++) {
+							iLine(nodeX[i] - 15, nodeY[i] - 4 + j, nodeX[i] - 7, nodeY[i] - 12 + j);
+							iLine(nodeX[i] - 7, nodeY[i] - 12 + j, nodeX[i] + 8, nodeY[i] + 8 + j);
+						}
+					}
+				}
+			}
+
+			if (showOakMapDialogue && isFirstTimeMapTour == 0) {
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+				iFilledRectangle(0, 0, 1024, 1024);
+				glDisable(GL_BLEND);
+
+				iShowImage(650, 175, 300, 400, imgOak);
+				iShowImage(112, 30, 800, 150, imgChatbox);
+				iSetColor(0, 0, 0);
+
+				char buf[100];
+				strncpy(buf, oakMapDialogueArray[currentOakMapDialogueIndex], currentCharCount);
+				buf[currentCharCount] = '\0';
+				iText(150, 80, buf, GLUT_BITMAP_TIMES_ROMAN_24);
+			}
+		}
+		else if (gameState == 9) {
+			iShowImage(mX, mY, mW, mH, imgMap2);
+			if (isFirstTimeMapTour == 0) {
+				for (int i = 0; i < 6; i++) {
+					int checkNode = i + 6;
+					if (nodesCleared == checkNode) {
+						glEnable(GL_BLEND);
+						glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+						glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+						iFilledCircle(nodeX[i], nodeY[i], 30);
+						glDisable(GL_BLEND);
+					}
+					else if (nodesCleared > checkNode) {
+						iSetColor(0, 200, 0);
+						iFilledCircle(nodeX[i], nodeY[i], 30);
+						iSetColor(255, 255, 255);
+						for (int j = -2; j <= 2; j++) {
+							iLine(nodeX[i] - 15, nodeY[i] - 4 + j, nodeX[i] - 7, nodeY[i] - 12 + j);
+							iLine(nodeX[i] - 7, nodeY[i] - 12 + j, nodeX[i] + 8, nodeY[i] + 8 + j);
+						}
+					}
+				}
+			}
+		}
+		else if (gameState == 10) {
+			iShowImage(mX, mY, mW, mH, imgMap3);
+		}
+		else if (gameState == 11) {
+			iShowImage(mX, mY, mW, mH, imgMap4);
+		}
+
+		if (lockScreenTimer > 0) {
+			drawLockScreen();
+		}
+
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 12 || gameState == 121) {
+
+		if (gameState == 121) {
+			iShowImage(0, 0, 1024, 1024, imgGrindBattle);
+		}
+		else {
+			if (!isWildEncounter && currentActiveNode >= 7 && currentActiveNode <= 12) {
+				iShowImage(0, 0, 1024, 1024, imgCaveBattleground);
+			}
+			else {
+				iShowImage(0, 0, 1024, 1024, imgGrassBattleground);
+			}
+		}
+
+		int currentFoeImg = imgWildPoke[0];
+		if (gameState == 121) {
+			currentFoeImg = dystopianEnemyImages[currentDystopianEnemyIndex];
+		}
+		else {
+			currentFoeImg = enemyImages[currentEnemyIndex];
+		}
+
+		if (!ballHit) {
+			iShowImage(610, 490, 250, 250, currentFoeImg);
+		}
+
+		if (isBallThrowing) {
+			float x = (1 - ballT) * (1 - ballT) * ballX0 + 2 * (1 - ballT) * ballT * ballX1 + ballT * ballT * ballX2;
+			float y = (1 - ballT) * (1 - ballT) * ballY0 + 2 * (1 - ballT) * ballT * ballY1 + ballT * ballT * ballY2;
+			iShowImage((int)x - 25, (int)y - 25, 50, 50, imgPokeball1);
+		}
+		else if (ballHit) {
+			iShowImage((int)ballX2 - 25, (int)ballY2 - 25, 50, 50, imgPokeball1);
+		}
+
+		if (!(playerHitEffect && playerBlink == 0)) {
+			int currentId = partyIDs[currentActivePokemon];
+			int backImg = -1;
+			if (currentId >= 0 && currentId <= 2) {
+				backImg = imgPrisamonBack[currentId];
+			}
+			else if (currentId == 3) {
+				backImg = imgPikachuBack;
+			}
+			else if (currentId >= 4 && currentId <= 9) {
+				backImg = imgWildPokeBack[currentId - 4];
+			}
+
+			if (backImg != -1) {
+				iShowImage(150 + playerTrembleOffset, 235, 300, 300, backImg);
+			}
+		}
+
+		drawHPBar(50, 950, myHP, myMaxHP, 400, 30);
+		drawHPBar(574, 950, oppHP, oppMaxHP, 400, 30);
+
+		iSetColor(18, 18, 224);
+		iFilledRectangle(0, 0, 1024, 150);
+
+		iSetColor(255, 255, 255);
+		iRectangle(0, 0, 614, 150);
+		iRectangle(614, 0, 410, 150);
+
+		if (projectileActive) {
+			iSetColor(projColorR, projColorG, projColorB);
+			iFilledCircle(projectileX, projectileY, 20);
+		}
+
+		iSetColor(255, 255, 255);
+		iText(10, 215, "Party:", GLUT_BITMAP_HELVETICA_18);
+
+		// --- [CUSTOMIZE] BATTLE PARTY UI VISUALS (DRAW) ---
+		for (int i = 0; i < 6; i++) {
+			int slotX = 70 + i * 45;
+			int slotY = 205;
+
+			if (i < partySize) {
+				if (partyHP[i] > 0) {
+					if (i == currentActivePokemon) {
+						iSetColor(0, 255, 0);
+					}
+					else {
+						iSetColor(255, 255, 0);
+					}
+				}
+				else {
+					iSetColor(255, 0, 0);
+				}
+				iFilledRectangle(slotX, slotY, 35, 35);
+				iSetColor(0, 0, 0);
+				char slotTxt[5];
+				sprintf(slotTxt, "%d", i + 1);
+				iText(slotX + 12, slotY + 10, slotTxt, GLUT_BITMAP_HELVETICA_18);
+			}
+			else {
+				iSetColor(100, 100, 100);
+				iFilledRectangle(slotX, slotY, 35, 35);
+			}
+		}
+
+		if (playerTurn == 1) {
+			if (isChoosingAttack == 1) {
+				if (hoverX >= 80 && hoverX <= 220 && hoverY >= 50 && hoverY <= 100) {
+					iSetColor(255, 255, 0);
+				}
+				else {
+					iSetColor(255, 255, 255);
+				}
+				iText(90, 70, "NORMAL", GLUT_BITMAP_HELVETICA_18);
+
+				if (hoverX >= 310 && hoverX <= 450 && hoverY >= 50 && hoverY <= 100) {
+					iSetColor(255, 255, 0);
+				}
+				else {
+					iSetColor(255, 255, 255);
+				}
+				iText(320, 70, "SPECIAL", GLUT_BITMAP_HELVETICA_18);
+			}
+			else {
+				iSetColor(255, 255, 255);
+				iText(90, 120, battleMessage, GLUT_BITMAP_TIMES_ROMAN_24);
+			}
+
+			if (hoverX >= 650 && hoverX <= 750 && hoverY >= 100 && hoverY <= 140) {
+				iSetColor(255, 255, 0);
+			}
+			else {
+				iSetColor(255, 255, 255);
+			}
+			iText(665, 120, "FIGHT", GLUT_BITMAP_HELVETICA_18);
+
+			if (isChoosingAttack == 0 && hoverX >= 770 && hoverX <= 880 && hoverY >= 100 && hoverY <= 140) {
+				iSetColor(255, 255, 0);
+			}
+			else {
+				iSetColor(255, 255, 255);
+			}
+			iText(780, 120, "POTION", GLUT_BITMAP_HELVETICA_18);
+
+			if (isChoosingAttack == 0 && hoverX >= 650 && hoverX <= 750 && hoverY >= 40 && hoverY <= 90) {
+				iSetColor(255, 255, 0);
+			}
+			else {
+				iSetColor(255, 255, 255);
+			}
+			iText(665, 60, "CATCH", GLUT_BITMAP_HELVETICA_18);
+
+			if (isChoosingAttack == 0 && hoverX >= 770 && hoverX <= 880 && hoverY >= 40 && hoverY <= 90) {
+				iSetColor(255, 255, 0);
+			}
+			else {
+				iSetColor(255, 255, 255);
+			}
+			iText(780, 60, "RUN", GLUT_BITMAP_HELVETICA_18);
+		}
+
+		if (gameState == 121) {
+			char opponentText[50];
+			sprintf(opponentText, "Opponent: %d / %d", currentDystopianEnemyIndex + 1, totalDystopianEnemies);
+			iSetColor(255, 255, 100);
+			iText(450, 120, opponentText, GLUT_BITMAP_HELVETICA_18);
+		}
+	}
+	else if (gameState == 13) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		iSetColor(0, 255, 0);
+		iText(420, 550, "YOU WIN!", GLUT_BITMAP_TIMES_ROMAN_24);
+		iSetColor(255, 255, 255);
+		iText(350, 480, "Press SPACE or Click ANYWHERE to continue", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 14) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		iSetColor(255, 0, 0);
+		iText(420, 550, "GAME OVER", GLUT_BITMAP_TIMES_ROMAN_24);
+		iSetColor(255, 255, 255);
+		iText(350, 480, "Press SPACE or Click ANYWHERE to continue", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 15 || gameState == 16) {
+		if (gameState == 15) {
+			iShowImage(0, 102, 1024, 820, imgOpenWorldBG);
+		}
+		else {
+			iShowImage(0, 102, 1024, 820, imgVillage16);
+		}
+
+		iShowImage(playerX, playerY, playerWidth, playerHeight, currentImgPlayer);
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+
+		if (showOakWildIntro || showOakBlockDialogue) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+			iFilledRectangle(0, 0, 1024, 1024);
+			glDisable(GL_BLEND);
+
+			iShowImage(650, 175, 300, 400, imgOak);
+			iShowImage(112, 30, 800, 150, imgChatbox);
+			iSetColor(0, 0, 0);
+
+			char buf[100];
+			if (showOakWildIntro) {
+				strncpy(buf, oakWildIntroArray[currentOakWildIntroIndex], currentCharCount);
+			}
+			else {
+				strncpy(buf, oakBlockArray[currentOakBlockIndex], currentCharCount);
+			}
+
+			buf[currentCharCount] = '\0';
+			iText(150, 80, buf, GLUT_BITMAP_TIMES_ROMAN_24);
+		}
+	}
+	else if (gameState == 18) {
+		iShowImage(0, 0, 1024, 1024, imgItemUI);
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 19) {
+		iShowImage(0, 0, 1024, 1024, imgBag);
+
+		int boxX = 485;
+		int boxW = 500;
+		int boxH = 80;
+		int boxYArray[6] = { 855, 755, 655, 555, 455, 355 };
+		iSetColor(0, 0, 0);
+
+		int currentY = boxYArray[bagSelection];
+		for (int w = 0; w < 5; w++) {
+			iRectangle(boxX - w, currentY - w, boxW + (w * 2), boxH + (w * 2));
+		}
+
+		for (int i = 0; i < 5; i++) {
+			int qty = 0;
+			if (i == 0) {
+				qty = potionCount;
+			}
+			else if (i == 1) {
+				qty = coins;
+			}
+			else if (i == 2) {
+				qty = prisaballs;
+			}
+			else if (i == 3) {
+				qty = evolutionStones;
+			}
+			else if (i == 4) {
+				qty = xpCandies;
+			}
+
+			char qtyText[20];
+			sprintf(qtyText, "x %d", qty);
+			iSetColor(0, 0, 0);
+
+			int textY = boxYArray[i] + 25;
+			iText(boxX + boxW - 80, textY, qtyText, GLUT_BITMAP_TIMES_ROMAN_24);
+		}
+
+		iSetColor(0, 0, 0);
+		iText(60, 300, itemDescLine1[bagSelection], GLUT_BITMAP_TIMES_ROMAN_24);
+		iText(60, 270, itemDescLine2[bagSelection], GLUT_BITMAP_TIMES_ROMAN_24);
+
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 20) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		iSetColor(255, 255, 255);
+
+		char capMsg[100];
+		if (lastCaughtId >= 0 && lastCaughtId < 6) {
+			sprintf(capMsg, "Congratulations you captured %s!", wildNames[lastCaughtId]);
+		}
+		else {
+			sprintf(capMsg, "Congratulations you captured a new Prisamon!");
+		}
+
+		iText(320, 550, capMsg, GLUT_BITMAP_TIMES_ROMAN_24);
+		iText(350, 480, "Press SPACE or Click ANYWHERE to continue", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 24) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		iSetColor(255, 255, 255);
+		iText(200, 500, "REWARD: 10X Potion, 5X Prisaball, 100X coin, 2X XpCandy", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 25) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+		iShowImage(0, 112, 1024, 800, imgPrisadex);
+
+		int startY = 820;
+		int listX = 640;
+		int ySpacing = 55;
+
+		for (int i = 0; i < 12; i++) {
+			int currentIndex = prisadexTopIndex + i;
+
+			if (currentIndex >= totalPrisamon) {
+				break;
+			}
+
+			if (currentIndex == prisadexSelection) {
+				iSetColor(0, 0, 0);
+				iRectangle(listX - 5, startY - (i * ySpacing) - 5, 320, 35);
+			}
+
+			char rowText[100];
+			sprintf(rowText, "%03d-   %s", currentIndex + 1, prisadexNames[currentIndex]);
+
+			iSetColor(0, 0, 0);
+			iText(listX, startY - (i * ySpacing), rowText, GLUT_BITMAP_TIMES_ROMAN_24);
+		}
+
+		int profileImg = -1;
+		if (prisadexSelection >= 0 && prisadexSelection <= 2) {
+			profileImg = imgGrass[prisadexSelection];
+		}
+		else if (prisadexSelection >= 3 && prisadexSelection <= 5) {
+			profileImg = imgFire[prisadexSelection - 3];
+		}
+		else if (prisadexSelection >= 6 && prisadexSelection <= 8) {
+			profileImg = imgWater[prisadexSelection - 6];
+		}
+		else if (prisadexSelection >= 9 && prisadexSelection <= 10) {
+			profileImg = imgNormal[prisadexSelection - 9];
+		}
+		else if (prisadexSelection == 11) {
+			profileImg = imgFlying[1];
+		}
+		else if (prisadexSelection >= 12 && prisadexSelection <= 14) {
+			profileImg = imgFlying[prisadexSelection - 9];
+		}
+		else if (prisadexSelection == 15) {
+			profileImg = imgNormal[3];
+		}
+		else if (prisadexSelection == 16) {
+			profileImg = imgNormal[2];
+		}
+		else if (prisadexSelection >= 17 && prisadexSelection <= 18) {
+			profileImg = imgFlying[prisadexSelection - 11];
+		}
+		else if (prisadexSelection == 19) {
+			profileImg = imgElectric[1];
+		}
+		else if (prisadexSelection == 20) {
+			profileImg = imgElectric[0];
+		}
+		else if (prisadexSelection == 21) {
+			profileImg = imgElectric[2];
+		}
+		else if (prisadexSelection >= 22 && prisadexSelection <= 25) {
+			profileImg = imgRock[prisadexSelection - 22];
+		}
+		else if (prisadexSelection == 26) {
+			profileImg = imgWater[3];
+		}
+		else if (prisadexSelection == 27) {
+			profileImg = imgWater[4];
+		}
+		else if (prisadexSelection == 28) {
+			profileImg = imgFlying[0];
+		}
+		else if (prisadexSelection >= 29 && prisadexSelection <= 32) {
+			if (prisadexSelection == 29) {
+				profileImg = imgWildPoke[0];
+			}
+			else {
+				profileImg = dystopianEnemyImages[prisadexSelection - 30];
+			}
+		}
+		else if (prisadexSelection == 33) {
+			profileImg = imgWildPoke[5]; // Scyther
+		}
+		else if (prisadexSelection >= 34 && prisadexSelection <= 36) {
+			profileImg = imgMap2Normal[prisadexSelection - 34];
+		}
+		else if (prisadexSelection >= 37 && prisadexSelection <= 39) {
+			profileImg = imgMap2Psychic[prisadexSelection - 37];
+		}
+
+		if (prisadexSelection == 17) {
+			profileImg = imgFlying[6];
+		}
+		if (prisadexSelection == 18) {
+			profileImg = imgFlying[2];
+		}
+
+		if (profileImg != -1) {
+			iShowImage(100, 350, 300, 300, profileImg);
+		}
+
+		char typeText[50];
+		sprintf(typeText, "Type: %s", prisadexTypes[prisadexSelection]);
+		iSetColor(0, 0, 0);
+		iText(180, 820, typeText, GLUT_BITMAP_TIMES_ROMAN_24);
+
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+	}
+	else if (gameState == 26 || gameState == 27) {
+		iSetColor(0, 0, 0);
+		iFilledRectangle(0, 0, 1024, 1024);
+
+		if (gameState == 27) {
+			iShowImage(0, 112, 1024, 800, imgPartyIndex);
+		}
+		else {
+			iShowImage(0, 112, 1024, 800, imgTraining);
+		}
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		iFilledRectangle(60, 800, 140, 80);
+		iSetColor(255, 255, 255);
+		iText(65, 835, "Current Party", GLUT_BITMAP_HELVETICA_18);
+
+		for (int i = 0; i < 6; i++) {
+			int ry = 690 - (i * 110);
+			int rw = 140;
+			int rh = 80;
+			int rx = 60;
+
+			glColor4f(0.0f, 0.0f, 0.0f, 0.35f);
+			iFilledRectangle(rx, ry, rw, rh);
+
+			int currentId = partyIDs[i];
+			int drawImg = -1;
+
+			if (currentId >= 0 && currentId <= 9) {
+				drawImg = imgSmall[currentId];
+			}
+
+			if (drawImg != -1) {
+				iSetColor(255, 255, 255);
+				iShowImage(rx + 5, ry + 10, 60, 60, drawImg);
+				iText(rx + 70, ry + 35, activePokeNames[currentId], GLUT_BITMAP_HELVETICA_12);
+			}
+
+			if (pcSwapState != 2) {
+				if (pcCursorArea == 0) {
+					if (pcCursorRow == i) {
+						if (pcSwapState == 1) {
+							iSetColor(255, 255, 0);
+						}
+						else {
+							iSetColor(255, 255, 255);
+						}
+						iRectangle(rx, ry, rw, rh);
+						iRectangle(rx - 1, ry - 1, rw + 2, rh + 2);
+					}
+				}
+			}
+
+			if (pcSwapState > 0) {
+				if (pcSrcArea == 0) {
+					if (pcSrcRow == i) {
+						iSetColor(255, 0, 0);
+						iRectangle(rx, ry, rw, rh);
+						iRectangle(rx - 1, ry - 1, rw + 2, rh + 2);
+					}
+				}
+			}
+		}
+
+		glColor4f(0.0f, 0.0f, 0.0f, 0.35f);
+		iFilledRectangle(260, 800, 380, 80);
+		iSetColor(255, 255, 255);
+		iText(380, 835, "Team In Queue", GLUT_BITMAP_HELVETICA_18);
+
+		int startX = 260;
+		int startY = 690;
+
+		for (int row = 0; row < 6; row++) {
+			for (int col = 0; col < 5; col++) {
+				int sqX = startX + (col * 80);
+				int sqY = startY - (row * 110);
+				int sW = 60;
+				int sH = 80;
+
+				glColor4f(0.0f, 0.0f, 0.0f, 0.35f);
+				iFilledRectangle(sqX, sqY, sW, sH);
+
+				int qIdx = row * 5 + col;
+				int qId = pcBoxIDs[qIdx];
+				int qImg = -1;
+
+				if (qId >= 0 && qId <= 9) {
+					qImg = imgSmall[qId];
+				}
+
+				if (qImg != -1) {
+					iSetColor(255, 255, 255);
+					iShowImage(sqX + 5, sqY + 10, 50, 60, qImg);
+				}
+
+				if (pcSwapState != 2) {
+					if (pcCursorArea == 1) {
+						if (pcCursorRow == row) {
+							if (pcCursorCol == col) {
+								if (pcSwapState == 1) {
+									iSetColor(255, 255, 0);
+								}
+								else {
+									iSetColor(255, 255, 255);
+								}
+								iRectangle(sqX, sqY, sW, sH);
+								iRectangle(sqX - 1, sqY - 1, sW + 2, sH + 2);
+							}
+						}
+					}
+				}
+
+				if (pcSwapState > 0) {
+					if (pcSrcArea == 1) {
+						if (pcSrcRow == row) {
+							if (pcSrcCol == col) {
+								iSetColor(255, 0, 0);
+								iRectangle(sqX, sqY, sW, sH);
+								iRectangle(sqX - 1, sqY - 1, sW + 2, sH + 2);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		glDisable(GL_BLEND);
+
+
+
+		iSetColor(50, 50, 50);
+		iFilledRectangle(5, 970, 121, 51);
+		iSetColor(255, 255, 255);
+		iText(40, 987, "BACK", GLUT_BITMAP_HELVETICA_18);
+	}
+
+	if (isFading) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(0.0f, 0.0f, 0.0f, fadeAlpha);
+		iFilledRectangle(0, 0, 1024, 1024);
+		glDisable(GL_BLEND);
+	}
+
+
+}
+
+// ================= INPUTS =================
+void iMouse(int button, int state, int mx, int my) {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		lastClickX = mx;
+		lastClickY = my;
+		printf("Mouse Clicked - X: %d, Y: %d\n", mx, my);
+
+		if (isFading) {
+			return;
+		}
+		if (lockScreenTimer > 0) {
+			lockScreenTimer = 0;
+			return;
+		}
+
+		if (gameState == 0) {
+			if (mx >= 100 && mx <= 450 && my >= 660 && my <= 760) {
+				partySize = 0;
+				currentActivePokemon = 0;
+
+				for (int i = 0; i < 6; i++) {
+					partyIDs[i] = -1;
+					partyHP[i] = 0;
+					partyMaxHP[i] = 0;
+					partyLevel[i] = 0;
+					partyAttack[i] = 0;
+					partyEXP[i] = 0;
+				}
+				for (int i = 0; i < 30; i++) {
+					pcBoxIDs[i] = -1;
+					pcBoxHP[i] = 0;
+					pcBoxMaxHP[i] = 0;
+					pcBoxLevel[i] = 0;
+					pcBoxAttack[i] = 0;
+					pcBoxEXP[i] = 0;
+				}
+
+				playerLevel = 1;
+				playerEXP = 0;
+				myMaxHP = 120;
+				myHP = 120;
+				playerAttack = 21;
+				potionCount = 3;
+				prisaballs = 5;
+				coins = 0;
+				nodesCleared = 0;
+				heroPageVisited = 0;
+				for (int i = 0; i < 6; i++) {
+					caughtWild[i] = 0;
+				}
+				gameState = 1;
+			}
+			else if (mx >= 100 && mx <= 450 && my >= 560 && my <= 650) {
+				saveGameState();
+			}
+			else if (mx >= 100 && mx <= 450 && my >= 460 && my <= 550) {
+				if (previousGameState == 15 || previousGameState == 16) {
+					gameState = previousGameState;
+				}
+				else {
+					loadGameState();
+				}
+			}
+		}
+		else if (gameState == 2 && showDialogue) {
+			if (++currentDialogueIndex >= totalDialogues) {
+				showDialogue = 0;
+				triggerTransition(3);
+			}
+			currentCharCount = 0;
+		}
+		else if (gameState == 3) {
+			if (mx >= 870 && mx <= 1090 && my >= 300 && my <= 360) {
+				currentPrisamonIndex = (currentPrisamonIndex + 1) % 3;
+			}
+			else if (mx >= 440 && mx <= 680 && my >= 315 && my <= 365) {
+				selectedPrisamon = currentPrisamonIndex;
+
+				partyIDs[0] = selectedPrisamon;
+				partyHP[0] = 120;
+				partyMaxHP[0] = 120;
+				partyLevel[0] = 1;
+				partyAttack[0] = 21;
+				partyEXP[0] = 0;
+				partySize = 1;
+				currentActivePokemon = 0;
+
+				loadActivePokemon();
+				triggerTransition(4);
+				currentCharCount = 0;
+			}
+		}
+		else if (gameState == 4) {
+			if (++currentEndDialogueIndex >= totalEndDialogues) {
+				triggerTransition(6);
+				currentCharCount = 0;
+			}
+			else {
+				currentCharCount = 0;
+			}
+		}
+		else if (gameState == 6) {
+			if (++currentPikachuDialogueIndex >= totalPikachuDialogues) {
+				if (partySize < 6) {
+					partyIDs[partySize] = 3;
+					partyHP[partySize] = 120;
+					partyMaxHP[partySize] = 120;
+					partyLevel[partySize] = 1;
+					partyAttack[partySize] = 25;
+					partyEXP[partySize] = 0;
+					partySize++;
+				}
+				triggerTransition(7);
+				heroPageX = 0;
+			}
+			else {
+				currentCharCount = 0;
+			}
+		}
+		else if (gameState == 7) {
+			if (!heroPageVisited) {
+				if (heroPageX <= -1024) {
+					heroPageVisited = 1;
+					triggerTransition(8);
+				}
+			}
+			else {
+				if (showOakGrindIntro) {
+					if (++currentOakGrindIntroIndex >= totalOakGrindIntros) {
+						showOakGrindIntro = 0;
+					}
+					currentCharCount = 0;
+					return;
+				}
+
+				int relativeX = mx - heroPageX;
+
+				if (relativeX >= 1050 && relativeX <= 1200 && my >= 200 && my <= 400) {
+					triggerTransition(19);
+				}
+				else if (relativeX >= 2100 && relativeX <= 2400 && my >= 450 && my <= 750) {
+					triggerTransition(18);
+				}
+				else if (relativeX >= 2100 && relativeX <= 2400 && my >= 200 && my <= 400) {
+					triggerTransition(15);
+					if (!hasSeenWildIntro) {
+						showOakWildIntro = 1;
+						hasSeenWildIntro = 1;
+						currentOakWildIntroIndex = 0;
+						currentCharCount = 0;
+					}
+				}
+				else if (relativeX >= 1825 && relativeX <= 2100 && my >= 200 && my <= 400) {
+					triggerTransition(8);
+				}
+				else if (relativeX >= 1250 && relativeX <= 1350 && my >= 200 && my <= 400) {
+					triggerTransition(26);
+				}
+				else if (relativeX >= 800 && relativeX <= 950 && my >= 200 && my <= 400) {
+					triggerTransition(25);
+				}
+				else if (relativeX >= 0 && relativeX <= 300 && my >= 900 && my <= 1024) {
+					previousGameState = gameState;
+					gameState = 0;
+				}
+				else {
+					if (mx >= 900) {
+						if (panIndex < 9) {
+							panIndex++;
+							heroPageX = panPositions[panIndex];
+						}
+					}
+					else if (mx <= 100) {
+						if (panIndex > 0) {
+							panIndex--;
+							heroPageX = panPositions[panIndex];
+						}
+					}
+				}
+			}
+		}
+		else if (gameState >= 8 && gameState <= 11) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(7);
+				return;
+			}
+
+			if (gameState == 8) {
+				if (showOakMapDialogue && isFirstTimeMapTour == 0) {
+					if (++currentOakMapDialogueIndex >= totalOakMapDialogues) {
+						showOakMapDialogue = 0;
+					}
+					currentCharCount = 0;
+					return;
+				}
+
+				if (isFirstTimeMapTour == 0) {
+					if (nodesCleared >= 6) {
+						triggerTransition(9);
+					}
+					else {
+						if (mx >= 50 && mx <= 974 && my >= 100 && my <= 924) {
+							int targetNode = nodesCleared + 1;
+							if (targetNode > 6) {
+								targetNode = 6;
+							}
+							for (int i = 0; i < nodesCleared; i++) {
+								if (abs(mx - nodeX[i]) <= 30 && abs(my - nodeY[i]) <= 30) {
+									targetNode = i + 1;
+									break;
+								}
+							}
+							startNodeBattle(targetNode);
+						}
+					}
+				}
+				else {
+					triggerTransition(9);
+				}
+			}
+			else if (gameState == 9) {
+				if (isFirstTimeMapTour) {
+					triggerTransition(10);
+				}
+				else {
+					if (mx >= 50 && mx <= 974 && my >= 100 && my <= 924) {
+						int targetNode = nodesCleared + 1;
+						if (targetNode > 12) {
+							targetNode = 12;
+						}
+						int maxClickable = nodesCleared - 6;
+						if (maxClickable > 6) maxClickable = 6;
+						for (int i = 0; i < maxClickable; i++) {
+							if (abs(mx - nodeX[i]) <= 30 && abs(my - nodeY[i]) <= 30) {
+								targetNode = i + 7;
+								break;
+							}
+						}
+						startNodeBattle(targetNode);
+					}
+				}
+			}
+			else if (gameState == 10) {
+				if (isFirstTimeMapTour) {
+					triggerTransition(11);
+				}
+			}
+			else if (gameState == 11) {
+				if (isFirstTimeMapTour) {
+					triggerTransition(8);
+					isFirstTimeMapTour = 0;
+				}
+			}
+		}
+		else if ((gameState == 12 || gameState == 121) && playerTurn == 1) {
+
+			// --- [CUSTOMIZE] BATTLE PARTY UI HITBOXES (MOUSE) ---
+			if (isChoosingAttack == 0) {
+				for (int i = 0; i < 6; i++) {
+					int slotX = 70 + i * 45;
+					int slotY = 205;
+
+					if (mx >= slotX && mx <= slotX + 35 && my >= slotY && my <= slotY + 35) {
+						if (i < partySize && partyHP[i] > 0 && i != currentActivePokemon) {
+							syncCurrentPokemon();
+							currentActivePokemon = i;
+							loadActivePokemon();
+							sprintf(battleMessage, "Go! Pokemon %d!", i + 1);
+							waitingForEnemy = 1;
+							delayCounter = 0;
+							playerTurn = 0;
+							isChoosingAttack = 0;
+							return;
+						}
+					}
+				}
+			}
+
+			if (isChoosingAttack == 0) {
+				if (mx >= 960 && mx <= 1060 && my >= 310 && my <= 350) {
+					isChoosingAttack = 1;
+				}
+				else if (mx >= 1150 && mx <= 1260 && my >= 310 && my <= 350) {
+					if (potionCount > 0) {
+						myHP += 45;
+						if (myHP > myMaxHP) {
+							myHP = myMaxHP;
+						}
+						potionCount--;
+						syncCurrentPokemon();
+						sprintf(battleMessage, "Used Potion!");
+						waitingForEnemy = 1;
+						delayCounter = 0;
+						playerTurn = 0;
+					}
+					else {
+						sprintf(battleMessage, "No Potion Left!");
+					}
+				}
+				else if (mx >= 960 && mx <= 1060 && my >= 250 && my <= 309) {
+					if (gameState == 121) {
+						sprintf(battleMessage, "Can't catch Dystopian Prisamon!");
+					}
+					else if (!isWildEncounter) {
+						sprintf(battleMessage, "Can't catch Trainer's Prisamon!");
+					}
+					else if (caughtWild[currentOpponent] == 1 || isBallThrowing || ballHit) {
+						sprintf(battleMessage, "You already caught this Prisamon!");
+					}
+					else if (prisaballs > 0) {
+						prisaballs--;
+						caughtWild[currentOpponent] = 1;
+						lastCaughtId = currentOpponent;
+
+						isBallThrowing = 1;
+						ballT = 0.0f;
+						ballHit = 0;
+					}
+					else {
+						sprintf(battleMessage, "No Prisaballs Left!");
+					}
+				}
+				else if (mx >= 1150 && mx <= 1260 && my >= 250 && my <= 309) {
+					if (gameState == 121) {
+						sprintf(battleMessage, "You can't run from a Grind Battle!");
+					}
+					else {
+						healAllPokemon();
+						sprintf(battleMessage, "Got away safely!");
+						if (isWildEncounter) {
+							triggerTransition(previousGameState);
+						}
+						else {
+							triggerTransition(8);
+						}
+					}
+				}
+			}
+			else if (isChoosingAttack == 1) {
+				if (mx >= 120 && mx <= 220 && my >= 270 && my <= 310) {
+					isChoosingAttack = 0;
+					playerAttackMove(0);
+				}
+				else if (mx >= 450 && mx <= 570 && my >= 270 && my <= 310) {
+					isChoosingAttack = 0;
+					playerAttackMove(1);
+				}
+				else if (mx >= 650 && mx <= 750 && my >= 100 && my <= 140) {
+					isChoosingAttack = 0;
+				}
+			}
+		}
+		else if (gameState == 18) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(7);
+			}
+			else if (canGrind) {
+				startDystopianGrindBattle();
+			}
+		}
+		else if (gameState == 24) {
+			potionCount += 10;
+			prisaballs += 5;
+			coins += 100;
+			xpCandies += 2;
+			lastGrindTime = time(NULL);
+			canGrind = 0;
+			triggerTransition(18);
+		}
+		else if (gameState == 25) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(7);
+				return;
+			}
+		}
+		else if (gameState == 26) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(7);
+				return;
+			}
+		}
+		else if (gameState == 27) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(battleReturnState);
+				return;
+			}
+		}
+		else if (gameState == 13 || gameState == 14 || gameState == 20) {
+			if (gameState == 20) {
+				if (!hasSeenGrindIntro) {
+					hasSeenGrindIntro = 1;
+					showOakGrindIntro = 1;
+					currentOakGrindIntroIndex = 0;
+					currentCharCount = 0;
+					heroPageX = -1024;
+				}
+				triggerTransition(7);
+			}
+			else {
+				if (isWildEncounter) {
+					triggerTransition(previousGameState);
+				}
+				else {
+					triggerTransition(7);
+				}
+			}
+		}
+		else if ((gameState == 15 || gameState == 16) && !isPlayerMoving) {
+			if (showOakWildIntro) {
+				if (++currentOakWildIntroIndex >= totalOakWildIntros) {
+					showOakWildIntro = 0;
+				}
+				currentCharCount = 0;
+				return;
+			}
+			if (showOakBlockDialogue) {
+				if (++currentOakBlockIndex >= totalOakBlocks) {
+					showOakBlockDialogue = 0;
+				}
+				currentCharCount = 0;
+				return;
+			}
+
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(7);
+				return;
+			}
+			else if (mx >= 0 && mx <= 400 && my >= 700 && my <= 1024) {
+				previousGameState = gameState;
+				gameState = 0;
+				return;
+			}
+		}
+		else if (gameState == 19) {
+			if (mx >= 5 && mx <= 126 && my >= 970 && my <= 1021) {
+				triggerTransition(previousGameState);
+				return;
+			}
+		}
+	}
+}
+
+void iKeyboard(unsigned char key) {
+	if (key == 'q' || key == 'Q') {
+		if (gameState != 26 && gameState != 27) {
+			exit(0);
+		}
+	}
+
+	if (isFading) {
+		return;
+	}
+
+	if (key == 27) {
+		if (gameState == 27) {
+			triggerTransition(battleReturnState);
+		}
+		else if (gameState > 0 && gameState != 12 && gameState != 121) {
+			triggerTransition(previousGameState);
+		}
+	}
+
+	if (gameState == 19) {
+		if (key == ' ' || key == '\r') {
+			if (bagSelection == 5) {
+				triggerTransition(previousGameState);
+			}
+		}
+	}
+
+	if (key == ' ' || key == '\r') {
+		if (gameState == 0) {
+			gameState = 1;
+		}
+		else if (gameState == 13 || gameState == 14 || gameState == 20) {
+			if (gameState == 20) {
+				if (!hasSeenGrindIntro) {
+					hasSeenGrindIntro = 1;
+					showOakGrindIntro = 1;
+					currentOakGrindIntroIndex = 0;
+					currentCharCount = 0;
+					heroPageX = -1024;
+				}
+				triggerTransition(7);
+			}
+			else {
+				if (isWildEncounter) {
+					triggerTransition(previousGameState);
+				}
+				else {
+					triggerTransition(7);
+				}
+			}
+		}
+		else if (gameState == 24) {
+			potionCount += 10;
+			prisaballs += 5;
+			coins += 100;
+			xpCandies += 2;
+			lastGrindTime = time(NULL);
+			canGrind = 0;
+			triggerTransition(18);
+		}
+	}
+
+	if (key == 's' || key == 'S') {
+		if (gameState == 8) {
+			triggerTransition(9);
+		}
+	}
+
+	if ((gameState == 12 || gameState == 121) && playerTurn) {
+		if (isChoosingAttack) {
+			if (key == '1') {
+				isChoosingAttack = 0;
+				playerAttackMove(0);
+			}
+			if (key == '2') {
+				isChoosingAttack = 0;
+				playerAttackMove(1);
+			}
+		}
+		else {
+			if (key == '1') {
+				isChoosingAttack = 1;
+			}
+			else if (key == '2') {
+				if (potionCount > 0) {
+					myHP += 45;
+					if (myHP > myMaxHP) {
+						myHP = myMaxHP;
+					}
+					potionCount--;
+					syncCurrentPokemon();
+					sprintf(battleMessage, "Used Potion!");
+					waitingForEnemy = 1;
+					delayCounter = 0;
+					playerTurn = 0;
+				}
+				else {
+					sprintf(battleMessage, "No Potion Left!");
+				}
+			}
+			else if (key == '3') {
+				if (gameState == 121) {
+					sprintf(battleMessage, "You can't run from a Grind Battle!");
+				}
+				else {
+					healAllPokemon();
+					sprintf(battleMessage, "Got away safely!");
+					if (isWildEncounter) {
+						triggerTransition(previousGameState);
+					}
+					else {
+						triggerTransition(8);
+					}
+				}
+			}
+			else if (key == '4') {
+				if (gameState == 121) {
+					sprintf(battleMessage, "Can't catch Dystopian Prisamon!");
+				}
+				else if (!isWildEncounter) {
+					sprintf(battleMessage, "Can't catch Trainer's Prisamon!");
+				}
+				else if (caughtWild[currentOpponent] == 1 || isBallThrowing || ballHit) {
+					sprintf(battleMessage, "You already caught this Prisamon!");
+				}
+				else if (prisaballs > 0) {
+					prisaballs--;
+					caughtWild[currentOpponent] = 1;
+					lastCaughtId = currentOpponent;
+					
+					isBallThrowing = 1;
+					ballT = 0.0f;
+					ballHit = 0;
+				}
+				else {
+					sprintf(battleMessage, "No Prisaballs Left!");
+				}
+			}
+		}
+	}
+
+	if (gameState == 26 || gameState == 27) {
+		// Handled in fixedUpdate
+	}
+}
+
+void iMouseMove(int mx, int my) {
+	hoverX = mx;
+	hoverY = my;
+}
+
+void iPassiveMouseMove(int mx, int my) {
+	hoverX = mx;
+	hoverY = my;
+}
+
+void fixedUpdate() {
+	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP)) {
+		y = 400 - 150;
+	}
+	if (isKeyPressed('a') || isSpecialKeyPressed(GLUT_KEY_LEFT)) {
+		x--;
+	}
+	if (isKeyPressed('s') || isSpecialKeyPressed(GLUT_KEY_DOWN)) {
+		y--;
+	}
+	if (isKeyPressed('d') || isSpecialKeyPressed(GLUT_KEY_RIGHT)) {
+		x++;
+	}
+	if (isKeyPressed(' ')) {
+		mciSendString("play ggsong from 0", NULL, 0, NULL);
+	}
+
+	if (!canGrind) {
+		if (time(NULL) - lastGrindTime >= grindCooldown) {
+			canGrind = 1;
+		}
+	}
+
+	if (gameState == 7 && heroPageVisited) {
+		if (showOakGrindIntro) {
+			return;
+		}
+
+		if (panCooldown == 0) {
+			if (isKeyPressed('d') || isKeyPressed('D') || isSpecialKeyPressed(GLUT_KEY_RIGHT)) {
+				if (panIndex < 9) {
+					panIndex++;
+					heroPageX = panPositions[panIndex];
+					panCooldown = 8;
+				}
+			}
+			if (isKeyPressed('a') || isKeyPressed('A') || isSpecialKeyPressed(GLUT_KEY_LEFT)) {
+				if (panIndex > 0) {
+					panIndex--;
+					heroPageX = panPositions[panIndex];
+					panCooldown = 8;
+				}
+			}
+		}
+		if (panCooldown > 0) {
+			panCooldown--;
+		}
+	}
+
+	if (gameState == 25) {
+		if (bagMenuCooldown == 0) {
+			if (isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP)) {
+				prisadexSelection--;
+				if (prisadexSelection < 0) {
+					prisadexSelection = 0;
+				}
+				if (prisadexSelection < prisadexTopIndex) {
+					prisadexTopIndex = prisadexSelection;
+				}
+				bagMenuCooldown = 6;
+			}
+			else if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN)) {
+				prisadexSelection++;
+				if (prisadexSelection >= totalPrisamon) {
+					prisadexSelection = totalPrisamon - 1;
+				}
+				if (prisadexSelection >= prisadexTopIndex + 12) {
+					prisadexTopIndex = prisadexSelection - 11;
+				}
+				bagMenuCooldown = 6;
+			}
+		}
+		if (bagMenuCooldown > 0) {
+			bagMenuCooldown--;
+		}
+	}
+
+	if (gameState == 26 || gameState == 27) {
+		if (pcSwapState != 2) {
+			if (pcMenuCooldown == 0) {
+				if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP)) {
+					if (pcCursorRow > 0) {
+						pcCursorRow--;
+					}
+					pcMenuCooldown = 8;
+				}
+				else if (isKeyPressed('s') || isSpecialKeyPressed(GLUT_KEY_DOWN)) {
+					if (pcCursorRow < 5) {
+						pcCursorRow++;
+					}
+					pcMenuCooldown = 8;
+				}
+				else if (isKeyPressed('a') || isSpecialKeyPressed(GLUT_KEY_LEFT)) {
+					if (pcCursorArea == 1) {
+						if (pcCursorCol > 0) {
+							pcCursorCol--;
+						}
+						else {
+							pcCursorArea = 0;
+							pcCursorCol = 0;
+						}
+					}
+					pcMenuCooldown = 8;
+				}
+				else if (isKeyPressed('d') || isSpecialKeyPressed(GLUT_KEY_RIGHT)) {
+					if (pcCursorArea == 0) {
+						pcCursorArea = 1;
+						pcCursorCol = 0;
+					}
+					else {
+						if (pcCursorCol < 4) {
+							pcCursorCol++;
+						}
+					}
+					pcMenuCooldown = 8;
+				}
+				else if (isKeyPressed('q') || isKeyPressed('Q')) {
+					if (pcSwapState == 0) {
+						int hasPoke = 0;
+						if (pcCursorArea == 0) {
+							if (pcCursorRow < partySize && partyIDs[pcCursorRow] != -1) hasPoke = 1;
+						} else {
+							int idx = pcCursorRow * 5 + pcCursorCol;
+							if (pcBoxIDs[idx] != -1) hasPoke = 1;
+						}
+						
+						if (hasPoke) {
+							pcSwapState = 1;
+							pcSrcArea = pcCursorArea;
+							pcSrcRow = pcCursorRow;
+							pcSrcCol = pcCursorCol;
+						}
+					} else if (pcSwapState == 1) {
+						pcSwapState = 0; // cancel
+					}
+					pcMenuCooldown = 15;
+				}
+				else if (isKeyPressed('e') || isKeyPressed('E')) {
+					if (pcSwapState == 1) {
+						if (pcSrcArea == pcCursorArea && pcSrcRow == pcCursorRow && pcSrcCol == pcCursorCol) {
+							pcSwapState = 0; // cancel
+						} else {
+							pcDestArea = pcCursorArea;
+							pcDestRow = pcCursorRow;
+							pcDestCol = pcCursorCol;
+							doPCSwap();
+							pcSwapState = 0;
+						}
+					}
+					pcMenuCooldown = 15;
+				}
+			}
+		}
+		if (pcMenuCooldown > 0) {
+			pcMenuCooldown--;
+		}
+		if (pcSwapState == 2) {
+			if (confirmAnimTicks < 20) {
+				confirmAnimTicks++;
+			}
+		}
+	}
+
+	if ((gameState == 15 || gameState == 16) && !isPlayerMoving && !isFading && !showOakWildIntro && !showOakBlockDialogue) {
+		int nextX = playerX;
+		int nextY = playerY;
+
+		if (isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP)) {
+			nextY += 27;
+			currentImgPlayer = imgPlayerUp;
+		}
+		else if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN)) {
+			nextY -= 27;
+			currentImgPlayer = imgPlayerDown;
+		}
+		else if (isKeyPressed('a') || isKeyPressed('A') || isSpecialKeyPressed(GLUT_KEY_LEFT)) {
+			nextX -= 48;
+			currentImgPlayer = imgPlayerLeft;
+		}
+		else if (isKeyPressed('d') || isKeyPressed('D') || isSpecialKeyPressed(GLUT_KEY_RIGHT)) {
+			nextX += 48;
+			currentImgPlayer = imgPlayerRight;
+		}
+
+		if (nextX != playerX || nextY != playerY) {
+			if (gameState == 15 && isWalkable15(nextX, nextY) == 0) {
+				return;
+			}
+			if (gameState == 16 && isWalkable16(nextX, nextY) == 0) {
+				return;
+			}
+
+			targetPlayerX = nextX;
+			targetPlayerY = nextY;
+			isPlayerMoving = 1;
+		}
+	}
+
+	if (gameState == 19) {
+		if (bagMenuCooldown == 0) {
+			if (isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP)) {
+				bagSelection--;
+				if (bagSelection < 0) {
+					bagSelection = 5;
+				}
+				bagMenuCooldown = 8;
+			}
+			else if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN)) {
+				bagSelection++;
+				if (bagSelection > 5) {
+					bagSelection = 0;
+				}
+				bagMenuCooldown = 8;
+			}
+		}
+		if (bagMenuCooldown > 0) {
+			bagMenuCooldown--;
+		}
+	}
+
+	if (isFirstTimeMapTour == 1) {
+		if (strcmp(currentMusic, "music1") != 0) {
+			mciSendString("stop music1", NULL, 0, NULL);
+			mciSendString("stop music2", NULL, 0, NULL);
+			mciSendString("stop music3", NULL, 0, NULL);
+			mciSendString("play music1 repeat", NULL, 0, NULL);
+			strcpy(currentMusic, "music1");
+		}
+	}
+	else if (gameState == 12 || gameState == 121) {
+		if (strcmp(currentMusic, "music3") != 0) {
+			mciSendString("stop music1", NULL, 0, NULL);
+			mciSendString("stop music2", NULL, 0, NULL);
+			mciSendString("stop music3", NULL, 0, NULL);
+			mciSendString("play music3 repeat", NULL, 0, NULL);
+			strcpy(currentMusic, "music3");
+		}
+	}
+	else {
+		if (strcmp(currentMusic, "music2") != 0) {
+			mciSendString("stop music1", NULL, 0, NULL);
+			mciSendString("stop music2", NULL, 0, NULL);
+			mciSendString("stop music3", NULL, 0, NULL);
+			mciSendString("play music2 repeat", NULL, 0, NULL);
+			strcpy(currentMusic, "music2");
+		}
+	}
+}
+
+int main() {
+	srand((unsigned int)time(NULL));
+
+	iSetTimer(150, updateLoadingScreen);
+	iSetTimer(40, updateTypewriter);
+	iSetTimer(25, updateFade);
+	iSetTimer(25, updateAutoPan);
+	iSetTimer(50, updateLockScreen);
+	iSetTimer(30, updateAutoMapTour);
+	iSetTimer(20, updateBattleAnimations);
+	iSetTimer(50, updatePlayerMovement);
+
+	mciSendString("open \"C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\music\\game_music-1.mp3\" alias music1", NULL, 0, NULL);
+	mciSendString("open \"C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\music\\game_music-2.mp3\" alias music2", NULL, 0, NULL);
+	mciSendString("open \"C:\\game_project\\Project_Prisamon\\Project_Prisamon\\img\\music\\game_music-3.mp3\" alias music3", NULL, 0, NULL);
+
+	iInitialize(1024, 1024, "Project Prisamon");
+	iStart();
+	return 0;
+}
